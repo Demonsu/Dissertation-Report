@@ -4,4 +4,78 @@
 
 In functional programming, a popular approach to build recursive descent parsers is to model parsers as functions, and to define higher-order functions (or combinators) that implement grammar constructions such as sequencing, choice, and repeatition. Wadler \cite{Wadler:1992} has been realised that using monad, an algebraic structure for mathematics, to build parsers would brings lots practical benefics. For example, using a monadic sequencing combinators for parsers avoids the messy manipulation of nested tuples of results present in earlier work. Moreover, using \textit{monad comprehension} notation makes parser more compact and easy to read.
 
-A monadic parser could be expressed in a modular way in terms of two simpler monads, so that the basic parser combinators no longer need to be defined explicitly. Rather, they arise automatically as a special case of lifting monad operations from a base monad \textit{m} to a certain other monad parameterised over \textit{m}.
+A monadic parser could be expressed in a modular way in terms of two simpler monads, so that the basic parser combinators no longer need to be defined explicitly. Rather, they arise automatically as a special case of lifting monad operations from a base monad \textit{m} to a certain other monad parameterised over \textit{m}. \cite{Hutton:1996}
+
+Monadic parser combinators makes it easy to write complicated parsers by combining those basic parsers togethers, which makes the parser looks just like the grammer definition in BNF notation. With the benefic of monadic nature, we could easily change the nature of the basic parser monad and the modification will automatically arise to those existing parsers via lifting construction. It highly increases the robustness, flexibility and availability of the library.
+
+This library is built in F2J, which does not supports type classes just like Haskell. So in this library, I used the most basic functions \texttt{bind} and \texttt{result} just for \texttt{Parser[T]} to build monadic parsers. I also provides some useful basic parsers, such as \texttt{char} for parsing one single character, \texttt{string} for parsing a specific sequence of characters, \texttt{choice} and \texttt{many} for choice and repeatition.
+
+I used this parser combinators library for case studies, parsing simple arithmetic expression, XML, Feather Weight Java and a subset grammar of F2J itself. Currently F2J does not support modular compilation, to manage the large code base of the case studies, I wrote a simple script to perform \textit{C-like include} to simulate modular system. To test the parsers above, I wrote a simple test framework in F2J to manage and run test cases automatically.
+
+\section{Project Structure}
+
+The project is hosted on Github (\url{https://github.com/zonyitoo/FParser}) and mirrored in (\url{https://github.com/hkuplg/FParser}). Open source under BSD license.
+
+\begin{singlespacing}
+\begin{lstlisting}
+.
+|-- AUTHORS
+|-- LICENSE
+|-- Makefile
+|-- README.md
+|-- refactor
+`-- src
+\end{lstlisting}
+\end{singlespacing}
+
+The main source code is located under \texttt{src} folder. I also provide a \texttt{Makefile} for building and running the tests, just type \texttt{make test} under the root directory.
+
+\begin{singlespacing}
+\begin{lstlisting}
+src
+|-- Makefile
+|-- Makefile.inc
+|-- clean                 // Clean the intermediate outputs
+|-- eq.sf                 // Definition of Eq[A]
+|-- example_arithexpr.sf  // Example of arithmetic expr parser
+|-- example_f2j_parser.sf // Example of F2J parser
+|-- example_fj_parser.sf  // Example of FWJava parser
+|-- example_parser.sf     // Example of basic parsers
+|-- f2j_parser.sf         // Definition of F2J parser
+|-- fj_parser.sf          // Definition of FWJava parser
+|-- include.py            // C-like include script
+|-- maybe.sf              // Definition of Maybe[A]
+|-- order.sf              // Definition of Order
+|-- parser.sf             // Definition of basic parsers
+|-- plist.sf              // Lazy evaluation ADT list
+|-- prelude.sf            // Prelude
+|-- pstring.sf            // Definition of PString
+|-- result.sf             // Definition of Result[T, E]
+|-- run.sh                // Helper script for running test program
+|-- show.sf               // Definition of Show[A]
+|-- simple_arith_expr_parser.sf // Definition of arithmetic expr parser
+|-- test.sf               // Definition of test framework
+|-- test_all.sf           // Run all test cases
+|-- test_f2j_parser.sf    // Test cases for F2J parser
+|-- test_fj_parser.sf     // Test cases for FWJava parser
+|-- test_parser.sf        // Test cases for basic parsers
+|-- test_parser_helpers.sf // Helpers for testing parsers
+|-- test_plist.sf         // Test cases for lazy ADT list
+|-- test_simple_arith_expr_parser.sf // Test arithmetic expr parser
+|-- test_xml_parser.sf    // Test cases for XML parser
+|-- testfx.sf             // Definition of test framework
+|-- thunk.sf              // Definition of Thunk[A]
+`-- xml_parser.sf         // Definition of XML parser
+\end{lstlisting}
+\end{singlespacing}
+
+The basic parsers are defined in \texttt{parser.sf}. All the other basic data structures, helper functions and parsers for case studies are defined in their own file. When compiling, you must use \texttt{include.py} to analyse the dependencies and generate a huge combined file, which contains all the depended modules. And let the F2J compiler compile that combined file.
+
+The \texttt{run.sh} script will do the above steps for you and call \texttt{f2j -r} to run the program.
+
+The \texttt{test\_all.sf} is the entrance of running all test cases, you could simply run \texttt{make test} to run all the test cases, or do it manually by \texttt{./run.sh test\_all.sf}.
+
+\section{Parser Core}
+
+\section{Case Studies}
+

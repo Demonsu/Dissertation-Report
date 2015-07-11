@@ -13,6 +13,10 @@ left=25mm,top=25mm,bottom=25mm]{geometry}
 \usepackage{setspace}
 \usepackage{listings}
 
+\usepackage{hyperref}
+\hypersetup{xetex,colorlinks=false}
+\usepackage{hypcap}
+
 \renewenvironment{abstract}
 {
   \thispagestyle{empty}
@@ -44,6 +48,8 @@ left=25mm,top=25mm,bottom=25mm]{geometry}
 
 \setmainfont{Palatino}
 \setlength{\parskip}{0.5\baselineskip}
+\setmonofont{Lucida Console}
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
 
 \title{Efficient Parser and Pretty Printer Combinators in F2J}
 \author{Yuteng Zhong, Yi Li, Fan Xia}
