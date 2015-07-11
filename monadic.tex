@@ -77,5 +77,169 @@ The \texttt{test\_all.sf} is the entrance of running all test cases, you could s
 
 \section{Parser Core}
 
+The core of parser is defined in \texttt{parser.sf}.
+
+\subsection{Parser Definition}
+
+According to \cite{Hutton:1996}, the parser could be defined as
+
+\begin{lstlisting}
+type Parser[T] = String -> [(T, String)];
+\end{lstlisting}
+
+Because F2J is call by value, so if I use the builtin List directly, the parser will have very bad performance, because it will try to generate all possible intermediate results but just a few of them are useful for producing the result. So I make a lazy evaluated list \texttt{PList} in \texttt{plist.sf}:
+
+\begin{lstlisting}
+data PList[A] = Nil
+              | Cons A (Thunk[PList[A]])
+              ;
+\end{lstlisting}
+
+The \texttt{Thunk} is the key for lazy evaluation, defined in \texttt{thunk.sf}:
+
+\begin{lstlisting}
+type Thunk[A] = Unit -> A;
+let invoke[A] (t : Thunk[A]) : A =
+    t ();
+\end{lstlisting}
+
+When we need the rest of the list, just use \texttt{invoke} to enforce evaluation of the rest of the list. So the parser will not parse all intermediate results unless they are required.
+
+Also, the \texttt{String} in F2J is Java's builtin String, which may not suitable for parsing, because lots of \texttt{substring} calls and string concatenation are required while parsing. It would be better if we transform the input to become a linked list of \texttt{Char}. So I also define a type \texttt{PString} in \texttt{pstring.sf}.
+
+\begin{lstlisting}
+type PString = PList[Char];
+\end{lstlisting}
+
+And then, the parser type in the library is
+
+\begin{lstlisting}
+type Parser[T] = PString -> PList[(T, PString)];
+\end{lstlisting}
+
+Parsing location is helpful when analysing parse errors, so we have \texttt{SourcePos} containing the position in the input source.
+
+\begin{lstlisting}
+type SourceName   = String;
+type Line         = Int;
+type Column       = Int;
+
+data SourcePos = SourcePos SourceName Line Column;
+\end{lstlisting}
+
+And then the parser input and output could carry the position in the source file.
+
+\begin{lstlisting}
+type ParseInput = (SourcePos, PString);
+type ParseContext[A] = (A, ParseInput);
+type ParseOutput[A] = PList[ParseContext[A]];
+\end{lstlisting}
+
+The final parser definition is
+
+\begin{lstlisting}
+type Parser[A] = ParseInput -> ParseOutput[A];
+\end{lstlisting}
+
+\subsection{Primitive Parsers}
+
+For monadic parser combinators, there are two basic parsers: \texttt{result} and \texttt{zero}.
+
+\begin{lstlisting}
+let result[V] (value : V) : Parser[V] =
+    \(inp : ParseInput) ->
+        singleton[ParseContext[V]] (newParseContext[V] value inp);
+
+let zero[V] : Parser[V] =
+    \(inp : ParseInput) -> Nil[ParseContext[V]];
+\end{lstlisting}
+
+These two basic parsers will construct two monad of parsers. The \texttt{result} will construct a parser which will always returns the \texttt{value} without consuming any inputs as \texttt{[(value, inputString)]}. The \texttt{zero} will construct a parser which will always returns an empty list \texttt{[]} no matter what the input string is.
+
+With these two basic parser, we could build our first parser \texttt{item}, which will takes the first character if the input string is not empty, otherwise it will return an empty output.
+
+\begin{lstlisting}
+let item : Parser[Char] =
+    \(inp : ParseInput) ->
+        case parseInputData inp of
+            Nil         ->      Nil[ParseContext[Char]]
+          | Cons c xs   ->
+                -- Construct the [(c, xs)]
+                singleton[ParseContext[Char]]
+                    (newParseContext[Char]
+                        c
+                        (newParseInput
+                            (updatePosChar (parseInputPos inp) c)
+                            (invoke[PString] xs)));
+\end{lstlisting}
+
+It looks compilcated, but actually it is obvious. First it pattern match the input string, if it is empty, then returns empty result, otherwise, take the first character as the parse result, and then put the rest of the input string as the second element of parse output.
+
+\subsection{Parser Combinators}
+
+The primitive parsers are not very useful themselves, we need some helper functions to form more useful parsers.
+
+To implement \textit{monadic} parser combinators, we need two basic monadic operations: \texttt{bind} and \texttt{return}. The \texttt{return} operation is the primitive parser \texttt{result}, then we only need to define the monadic \texttt{bind}:
+
+\begin{lstlisting}
+let bind[A, B] (p : Parser[A]) (f : A -> Parser[B]) : Parser[B] =
+    \(inp : ParseInput) ->
+        concat[ParseContext[B]]
+              (map[ParseContext[A], ParseOutput[B]]
+                  (\(v : ParseContext[A]) -> f (parseContextResult[A] v) (parseContextInput[A] v)) (p inp));
+\end{lstlisting}
+
+It would be easier to understand if we rewrite it in Haskell's list comprehension syntax:
+
+\begin{lstlisting}
+bind      :: Parser a -> (a -> Parser b) -> Parser b
+p `bind` f = \inp -> concat [f v inp’ | (v,inp’) <- p inp]
+\end{lstlisting}
+
+The \texttt{bind} is a monadic sequencing combinator, which integrates the sequencing of parsers with the processing of their result values. It would be interpreted as follows. First of all, the parser p is applied to the input string, yielding a list of \texttt{(value, parseInput)} pairs. Now since \texttt{f} is a function that takes a value and returns a parser, it can be applied to each value in order. This results in a list of lists of \texttt{(value, parseInput)} pairs, that can then be flattened to a single list using \texttt{concat}.
+
+In BNF notation, the large grammer is built from smaller grammers using a \textit{sequencing} operator -- denoted by juxtaposition, and a \textit{choice} operator -- denoted by a vertical bar \texttt{|}.
+
+To define a \textit{sequencing} operator, we will have a \texttt{seq} combinator:
+
+\begin{lstlisting}
+let seq[A, B] (p : Parser[A]) (q : Parser[B]) : Parser[(A, B)] =
+    bind[A, (A, B)] p (\(x : A) ->
+    bind[B, (A, B)] q (\(y : B) ->
+    result[(A, B)] (x, y)));
+\end{lstlisting}
+
+The \texttt{seq} combinator will applies one parser after the other, with the result from the two parser being combined as pairs. This parser may leads to parsers with nested tuples as results, which are messy to manipulate. As you can see in the above, \texttt{seq} is equivalent to two \texttt{bind} operations, and you could apply some basic transformations in the last closure, which avoids the nested pairs. So the \texttt{seq} is not very useful in the library, but still provided in case of some special usages.
+
+For \textit{choice} operator, we could define a \texttt{choice} combinator:
+
+\begin{lstlisting}
+let choice[A] (p : Parser[A]) (q : Parser[A]) : Parser[A] =
+    \(inp : ParseInput) ->
+        (p inp) ++[ParseContext[A]] (q inp);
+\end{lstlisting}
+
+The \texttt{choice} combinator will concatenate the two parses' results into one. But this combinator could be optimized, because most of the time, we only needs some of the results of the parser \texttt{p}, but this combinator will actually let parser \texttt{q} computes at least one of its results. To make use of the lazy evaluation list nature, \texttt{choice} could be modified as follows:
+
+\begin{lstlisting}
+let choice[A] (p : Parser[A]) (q : Parser[A]) : Parser[A] =
+    \(inp : ParseInput) ->
+        (p inp) +~[ParseContext[A]] (\(__ : Unit) -> q inp);
+\end{lstlisting}
+
+The operator \texttt{+\textasciitilde{}} is an lazy version of \texttt{++}, it accepts a thunk as the second parameter, so that it could delay the computation of \texttt{q inp}.
+
+\subsection{More Parsers}
+
 \section{Case Studies}
+\subsection{Simple Arithmetic Expression Parser}
+
+\subsection{XML Parser}
+
+\subsection{Feather Weight Java Parser}
+
+\subsection{A subset of F2J Parser}
+
+\section{Miscellaneous}
+\subsection{C-like Include Script}
 
