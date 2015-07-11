@@ -1,13 +1,48 @@
 \documentclass[12pt,a4paper,oneside]{report}
 
 \usepackage{fontspec}
-\usepackage{geometry}
+\usepackage[paperheight=297mm,paperwidth=210mm,
+left=25mm,top=25mm,bottom=25mm]{geometry}
 \usepackage{indentfirst}
 \usepackage{url}
 \usepackage{setspace}
 
+\usepackage{abstract}
+\usepackage{pdfpages}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{listings}
+
+\renewenvironment{abstract}
+{
+  \thispagestyle{empty}
+  \null
+  \begin{center}
+   \vspace{2.4cm}
+    \setlength{\parskip}{0pt}
+    \bigskip
+    {\huge{\textit{Abstract}} \par}
+    \bigskip
+  \end{center}
+}
+
+\newcommand\acknowledgements[1]{
+\thispagestyle{plain}
+\null\vfil
+\begin{center}{\huge{\textbf{Acknowledgements}} \par}\end{center}
+{\normalsize #1}
+\vfil\vfil\null
+}
+
+\newcommand\Declaration[1]{
+\thispagestyle{plain}
+\null\vfil
+\begin{center}{\huge\bf Declaration\par}\end{center}
+{\normalsize #1}
+\vfil\vfil\null
+}
+
 \setmainfont{Palatino}
-\geometry{left=38mm,right=2.5cm,top=2.5cm,bottom=2.5cm}
 \setlength{\parskip}{0.5\baselineskip}
 
 \title{Efficient Parser and Pretty Printer Combinators in F2J}
@@ -51,7 +86,7 @@
 
         \begin{tabular}{ccc}
         Yuteng Zhong & Yi Li & Fan Xia\\
-        3035169867 & 3035169867 & 3035150256
+        3035169867 & 3035149518 & 3035150256
         \end{tabular}
 
         \vspace{0.5cm}
@@ -63,21 +98,21 @@
         \@date
     \end{center}
 \end{titlepage}
-\newpage
+\clearpage
 
 \doublespacing
 
 \include{abstract}
-\newpage
+\clearpage
 
 \include{declaration}
-\newpage
+\clearpage
 
 \include{acknowledgement}
-\newpage
+\clearpage
 
 \tableofcontents
-\newpage
+\clearpage
 
 \pagestyle{plain}
 \setcounter{page}{1}
@@ -92,6 +127,7 @@
 \include{discussion}
 \include{conclusion}
 
+\renewcommand{\bibname}{References}
 \bibliographystyle{plain}
 \bibliography{report.bib}
 
