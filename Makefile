@@ -2,10 +2,7 @@
 all: report.pdf
 
 report.pdf: report.tex report.bib
-	xelatex report.tex
-	bibtex report
-	xelatex report.tex
-	xelatex report.tex
+	latexmk -xelatex report
 
 clean:
-	rm -rf *.pdf *.log *.aux
+	rm -rf *.pdf *.log *.aux *.bbl *.blg *.fdb_latexmk *.fls *.toc
