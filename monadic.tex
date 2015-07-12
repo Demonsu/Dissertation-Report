@@ -198,6 +198,8 @@ p `bind` f = \inp -> concat [f v inp’ | (v,inp’) <- p inp]
 
 The \texttt{bind} is a monadic sequencing combinator, which integrates the sequencing of parsers with the processing of their result values. It would be interpreted as follows. First of all, the parser p is applied to the input string, yielding a list of \texttt{(value, parseInput)} pairs. Now since \texttt{f} is a function that takes a value and returns a parser, it can be applied to each value in order. This results in a list of lists of \texttt{(value, parseInput)} pairs, that can then be flattened to a single list using \texttt{concat}.
 
+The \texttt{bind} combinator avoids the problem of nested tuples of result because the results of the first parser are made directly available for processing by the second, rather than being paired up with the other results to be processed later on.
+
 In BNF notation, the large grammer is built from smaller grammers using a \textit{sequencing} operator -- denoted by juxtaposition, and a \textit{choice} operator -- denoted by a vertical bar \texttt{|}.
 
 To define a \textit{sequencing} operator, we will have a \texttt{seq} combinator:
@@ -227,9 +229,189 @@ let choice[A] (p : Parser[A]) (q : Parser[A]) : Parser[A] =
         (p inp) +~[ParseContext[A]] (\(__ : Unit) -> q inp);
 \end{lstlisting}
 
-The operator \texttt{+\textasciitilde{}} is an lazy version of \texttt{++}, it accepts a thunk as the second parameter, so that it could delay the computation of \texttt{q inp}.
+The operator \texttt{+\textasciitilde{}} is the lazy version of \texttt{++}, it accepts a thunk as the second parameter, so that it could delay the computation of \texttt{q inp}.
 
-\subsection{More Parsers}
+We already has a primitive parser \texttt{item}, which will consumes one character unconditionally. With the power of bind, in practice, we could build a parser which could consumes a certain specific character, \texttt{sat} parser. The \texttt{sat} parser takes a predicate (a function takes a character as parameter and return a boolean value), and returns a parser that consumes one single character if it \textit{satisfies} the predicate, or fails otherwise:
+
+\begin{lstlisting}
+let sat (f : Char -> Bool) : Parser[Char] =
+    bind[Char, Char] item (\(x : Char) -> if f x then (result[Char] x) else zero[Char]);
+\end{lstlisting}
+
+Using \texttt{sat}, we can define parsers for specific characters, single digits, lower-case letters and upper-case letters:
+
+\begin{lstlisting}
+let char (x : Char) : Parser[Char] =
+    sat (\(y : Char) -> x `charEq` y);
+
+let notchar (x : Char) : Parser[Char] =
+    sat (\(y : Char) -> x != y);
+
+let digit : Parser[Char] =
+    sat (\(x : Char) -> java.lang.Character.isDigit(x));
+
+let upper : Parser[Char] =
+    sat (\(x : Char) -> java.lang.Character.isUpperCase(x));
+
+let lower : Parser[Char] =
+    sat (\(x : Char) -> java.lang.Character.isLowerCase(x));
+\end{lstlisting}
+
+For example, if we apply the parser \texttt{char 'F'} to the input string \texttt{"FCore To Java"}, it will succeeds with a single successful result \texttt{[('F', "Core To Java")]}, since the parser \texttt{char 'F'} succeeds with the character \texttt{'F'}. On the other hand, apply the parser \texttt{lower} to the string \texttt{"FCore to Java"} will fail with an empty result \texttt{[]}, since the character \texttt{'F'} is not a lower-case character.
+
+With \texttt{digit}, \texttt{upper} and \texttt{lower}, we could have some parsers for more practical usage:
+
+\begin{lstlisting}
+let letter : Parser[Char] =
+    choice[Char] lower upper;
+
+let alphanum : Parser[Char] =
+    choice[Char] letter digit;
+
+let noneof (s : String) : Parser[Char] =
+    sat (\(x : Char) -> (charin x (pStringFromString s)) `boolEq` False);
+
+let oneof (s : String) : Parser[Char] =
+    sat (\(x : Char) -> (charin x (pStringFromString s)));
+\end{lstlisting}
+
+The \texttt{letter} parser will parse one character in lower-case and upper-case, and the \texttt{alphanum} will parse one letter and digital character. Moreover, \texttt{noneof} takes an String (a list of characters) and yields a parser that will parse one single character that is not in the provided String, in contract, \texttt{oneof} will yields a parser that will parse one single character that is in the provided String.
+
+Operators could provide more convenience to write parsers, such that if we use the function \texttt{bind} in infix notation \texttt{p `bind` f}, and define an operator \texttt{>>=} works just like \texttt{bind}, and then it could be writtern as \texttt{p >>= f}, which is more obvious and easy to read.
+
+\begin{lstlisting}
+let (>>=)[A, B] (p : Parser[A]) (f : A -> Parser[B]) : Parser[B] =
+    bind[A, B] p f;
+
+let (>>)[A, B] (p : Parser[A]) (q : Parser[B]) : Parser[B] =
+    p >>=[A, B] (\(__ : A) -> q);
+
+let (<*)[A, B] (p : Parser[A]) (q : Parser[B]) : Parser[A] =
+    p >>=[A, A] (\(a : A) ->
+    q >>=[B, A] (\(__ : B) ->
+    result[A] a));
+\end{lstlisting}
+
+The operators \texttt{>>} and \texttt{<*} are the special versions of \texttt{bind}. The \texttt{>>} will discard the result of the first parser and return the result of the second parser, while the \texttt{<*} will discard the second one.
+
+If we want to manipulate the result of one parser, we could provide a helpful combinator \texttt{using}, which will take a converter to transform the result of the parser:
+
+\begin{lstlisting}
+let using[A, B] (p : Parser[A]) (f : A -> B) : Parser[B] =
+    bind[A, B] p (\(a : A) -> result[B] (f a));
+
+let (<$>)[A, B] (p : Parser[A]) (f : A -> B) : Parser[B] =
+    using[A, B] p f;
+
+let ($>)[A, B] (p : Parser[A]) (b : B) : Parser[B] =
+    using[A, B] p (\(__ : A) -> b);
+\end{lstlisting}
+
+The operator \texttt{\$>} will replace the result of the parser \texttt{p} with a specific value \texttt{b}.
+
+With the power of \texttt{bind}, here comes our first parser that will parse a sequence of characters, \texttt{string}.
+
+\begin{lstlisting}
+let rec string (s : PString) : Parser[PString] =
+    case s of
+        Nil         ->  result[PString] (Nil[Char])
+     |  Cons x xs   ->
+            let xs = invoke[PString] xs;
+            (char x)
+                >>[Char, PString] (string xs)
+                $>[PString, PString] (x +>[Char] xs);
+\end{lstlisting}
+
+The operator \texttt{+>} will prepend the \texttt{x} to the list \texttt{xs}.
+
+\texttt{string} will traverse all the characters in the provided string \texttt{s} and try to parse it one by one with \texttt{char}, and then use \texttt{string} to parse the rest of the string recusively. It returns the provided string if succeeds, or \texttt{zero} otherwise.
+
+\subsection{Parsers for Repeatition}
+
+First of all, let's define a parser \texttt{many} for applying a parser \texttt{p} zero or more times to an input string, and a parser \texttt{many1} for applying a parser at least one times:
+
+\begin{lstlisting}
+let rec many[A] (p : Parser[A]) : Parser[PList[A]] =
+    choice[PList[A]] (bind[A, PList[A]] p (\(x : A) ->
+                      bind[PList[A], PList[A]] (many[A] p) (\(xs : PList[A]) ->
+                      result[PList[A]] (x +>[A] xs))))
+                     (result[PList[A]] (Nil[A]));
+
+let many1[A] (p : Parser[A]) : Parser[PList[A]] =
+    bind[A, PList[A]] p (\(x : A) ->
+    bind[PList[A], PList[A]] (many[A] p) (\(xs : PList[A]) ->
+    result[PList[A]] (x +>[A] xs)));
+\end{lstlisting}
+
+The parser \texttt{many} works just like the \texttt{*} notation, and \texttt{many1} is similar to \texttt{+} notation in regular expression.
+
+By applying different parser \texttt{p} to \texttt{many} and \texttt{many1}, we can construct more userful parsers, such as \texttt{word} that will parse a sequence of letters, and \texttt{ident} will parse an identifier (starts with a lower-case letter and follows by alphanums).
+
+\begin{lstlisting}
+let word : Parser[PString] =
+    many1[Char] letter;
+
+let ident : Parser[PString] =
+    bind[Char, PString]    lower (\(x : Char) ->
+    bind[PString, PString] (many[Char] alphanum) (\(xs : PString) ->
+    result[PString] (x +>[Char] xs)));
+\end{lstlisting}
+
+We only have parsers that will produce one single character or a sequence of characters, we can use \texttt{many1} to form parsers that can parse natural numbers, hexdecimal numbers and signed integers.
+
+\begin{lstlisting}
+let natural : Parser[Int] =
+    let eval (xs : PList[Char]) =
+        foldl[Int, Int] (\(b : Int) (a : Int) -> 10 * b + a)
+                        0
+                        (map[Char, Int] (\(c : Char) -> java.lang.Character.digit(c, 10)) xs);
+
+    bind[PList[Char], Int] (many1[Char] digit) (\(xs : PList[Char]) -> result[Int] (eval xs));
+
+let hexdecimal : Parser[Int] =
+    let eval (xs : PList[Char]) =
+        foldl[Int, Int] (\(b : Int) (a : Int) -> 16 * b + a)
+                        0
+                        (map[Char, Int] (\(c : Char) -> java.lang.Character.digit(c, 16)) xs);
+    (many1[Char] (oneof "1234567890abcdefABCDEF"))
+        <$>[PList[Char], Int] (\(xs : PList[Char]) -> eval xs);
+
+let int : Parser[Int] =
+    choice[Int] ((char '-') >>[Char, Int]
+                 (using[Int,Int] natural (\(n : Int) -> (-n))))
+              natural;
+\end{lstlisting}
+
+The \texttt{natural} parser will try to parse digital characters and convert it back to \texttt{Int} with \texttt{foldr}, the procedure is similar in \texttt{hexdecimal} excepts it accepts hexdecimal characters. \texttt{int} first check if it starts with a character \texttt{'-'}, if yes, then it will use \texttt{natural} to parse the rest of the string and then modify the result with negation, otherwise, use \texttt{natural} directly to parse the string and return the result.
+
+\subsection{Repeatition with Separators}
+
+The \texttt{many} combinator parses a sequence of items, but sometimes, we may need to consider repeatition with separators, such as \texttt{1,42,100} is integers that are separated by \texttt{','}. So here we could define a parser called \texttt{sepby1}, which will recognise non-empty sequences of a given parser \texttt{p}, separated by a parser \texttt{sep} whose result values are ignored:
+
+\begin{lstlisting}
+let sepby1[A, B] (p : Parser[A]) (sep : Parser[B]) : Parser[PList[A]] =
+    let rep[A, B] (p : Parser[A]) : Parser[A] =
+        bind[B, A] sep (\(s : B) -> bind[A, A] p (\(y : A) -> result[A] y));
+    bind[A, PList[A]]        p                       (\(x : A) ->
+    bind[PList[A], PList[A]] (many[A] (rep[A, B] p)) (\(xs : PList[A]) ->
+    result[PList[A]] (Cons[A] x (\(__ : Unit) -> xs))));
+\end{lstlisting}
+
+Also, we could define a \texttt{sepby} that it could deal with the situation of empty matche:
+
+\begin{lstlisting}
+let sepby[A, B] (p : Parser[A]) (sep : Parser[B]) : Parser[PList[A]] =
+    choice[PList[A]] (sepby1[A, B] p sep) (result[PList[A]] (Nil[A]));
+\end{lstlisting}
+
+Moreover, for the use cases like parsing \texttt{"[42,13,0]"}, we could have a combinators called \texttt{between}, which takes two parsers for open and close, and then yields the result between them.
+
+\begin{lstlisting}
+let between[L, R, P] (l : Parser[L]) (r : Parser[R]) (p : Parser[P]) : Parser[P] =
+    l *>[L, P] p <*[P, R] r;
+\end{lstlisting}
+
+The operator \texttt{*>} is just an alias of \texttt{>>}.
 
 \section{Case Studies}
 \subsection{Simple Arithmetic Expression Parser}
