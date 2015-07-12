@@ -1,6 +1,9 @@
 \documentclass[12pt,a4paper,oneside]{report}
 
 \usepackage{fontspec}
+\setmainfont{Palatino}
+\setmonofont{Lucida Sans Typewriter}
+
 \usepackage[paperheight=297mm,paperwidth=210mm,
 left=25mm,top=25mm,bottom=25mm]{geometry}
 \usepackage{indentfirst}
@@ -14,7 +17,6 @@ left=25mm,top=25mm,bottom=25mm]{geometry}
 \usepackage{listings}
 
 \usepackage{hyperref}
-\hypersetup{xetex,colorlinks=false}
 \usepackage{hypcap}
 
 \renewenvironment{abstract}
@@ -46,15 +48,15 @@ left=25mm,top=25mm,bottom=25mm]{geometry}
 \vfil\vfil\null
 }
 
-\setmainfont{Palatino}
 \setlength{\parskip}{0.5\baselineskip}
-\setmonofont{Lucida Console}
-\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{
+    basicstyle=\singlespacing\footnotesize\ttfamily,
+    breaklines=true,
+    morekeywords={case, of, in, new, let, if, then, else, rec, data, type, (), Int, String, Char, Bool, Unit, forall}
+}
 
 \title{Efficient Parser and Pretty Printer Combinators in F2J}
 \author{Yuteng Zhong, Yi Li, Fan Xia}
-
-\newcommand{\HRule}[1]{\rule{\linewidth}{#1}}   % Horizontal rule
 
 \begin{document}
 

@@ -16,8 +16,7 @@ I used this parser combinators library for case studies, parsing simple arithmet
 
 The project is hosted on Github (\url{https://github.com/zonyitoo/FParser}) and mirrored in (\url{https://github.com/hkuplg/FParser}). Open source under BSD license.
 
-\begin{singlespacing}
-\begin{lstlisting}
+\begin{lstlisting}[language={}]
 .
 |-- AUTHORS
 |-- LICENSE
@@ -26,12 +25,10 @@ The project is hosted on Github (\url{https://github.com/zonyitoo/FParser}) and 
 |-- refactor
 `-- src
 \end{lstlisting}
-\end{singlespacing}
 
 The main source code is located under \texttt{src} folder. I also provide a \texttt{Makefile} for building and running the tests, just type \texttt{make test} under the root directory.
 
-\begin{singlespacing}
-\begin{lstlisting}
+\begin{lstlisting}[language={}]
 src
 |-- Makefile
 |-- Makefile.inc
@@ -67,7 +64,6 @@ src
 |-- thunk.sf              // Definition of Thunk[A]
 `-- xml_parser.sf         // Definition of XML parser
 \end{lstlisting}
-\end{singlespacing}
 
 The basic parsers are defined in \texttt{parser.sf}. All the other basic data structures, helper functions and parsers for case studies are defined in their own file. When compiling, you must use \texttt{include.py} to analyse the dependencies and generate a huge combined file, which contains all the depended modules. And let the F2J compiler compile that combined file.
 
@@ -191,7 +187,7 @@ let bind[A, B] (p : Parser[A]) (f : A -> Parser[B]) : Parser[B] =
 
 It would be easier to understand if we rewrite it in Haskell's list comprehension syntax:
 
-\begin{lstlisting}
+\begin{lstlisting}[language=Haskell]
 bind      :: Parser a -> (a -> Parser b) -> Parser b
 p `bind` f = \inp -> concat [f v inp’ | (v,inp’) <- p inp]
 \end{lstlisting}
@@ -235,7 +231,11 @@ We already has a primitive parser \texttt{item}, which will consumes one charact
 
 \begin{lstlisting}
 let sat (f : Char -> Bool) : Parser[Char] =
-    bind[Char, Char] item (\(x : Char) -> if f x then (result[Char] x) else zero[Char]);
+    bind[Char, Char] item (\(x : Char) ->
+        if f x then
+            (result[Char] x)
+        else
+            zero[Char]);
 \end{lstlisting}
 
 Using \texttt{sat}, we can define parsers for specific characters, single digits, lower-case letters and upper-case letters:
