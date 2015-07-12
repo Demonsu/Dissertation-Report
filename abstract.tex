@@ -1,7 +1,7 @@
 
 
 \begin{abstract}
-In functional programming, a parser combinator is a higher-order function that accepts serveral parsers as input and returns a new parser as its output. We will try to find and apply several theories in building parser combinators in F2J, which is a functional programming language targeting JVM with support for full tail-call elimination (TCE). In order to make a self-hosting compiler, in other word, a bootstrapped compiler for F2J, we will need a parser combinators library. In this process, we could also build a combinators library for pretty printing with a similar approach, which is a reversed process of parsing.
+In functional programming, a parser combinator is a higher-order function that accepts several parsers as input and returns a new parser as its output. We will try to find and apply several theories in building parser combinators in F2J, which is a functional programming language targeting JVM with support for full tail-call elimination (TCE). In order to make a self-hosting compiler, in other word, a bootstrapped compiler for F2J, we will need a parser combinators library. In this process, we could also build a combinators library for pretty printing with a similar approach, which is a reversed process of parsing.
 
 Our project will going to apply existing methods, such as monadic parser combinators \cite{Hutton:1996} and packrat parser combinators \cite{Ford2002}, with optimizations based on common mechanisms and with special language features in F2J, such as full tail-call elimination (TCE). The basic target is that the library would have comparable performance than Scala's.
 \end{abstract}
