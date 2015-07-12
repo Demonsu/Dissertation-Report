@@ -1,1 +1,86 @@
-\chapter{General Parser}
+\chapter{General Parser Combinators}
+This chapter mainly focuses on the implementation details of a general parser combinator library. We will go through the whole process from the very beginning of the construction of a parser type to the whole working version.
+
+\section{Type of Parser}
+The goal of a parsing task is to analyse a piece of code constructed according to a certain kind of grammar and then transfer it into a parse tree. This parse tree then can be utilized by a compiler to generate machine code. Many approaches can be used to define a basic parser type. For general parsing purposes, we define the parser type in F2J as follow.
+\begin{singlespace}
+\begin{lstlisting}[language=Haskell,basicstyle=\small]
+  type Binding[Symbol, Result] = (PolyList[Symbol], Result);
+  type Parser[Symbol, Result] = 
+	PolyList[Symbol] -> PolyList[Binding[Symbol, Result]];
+\end{lstlisting}
+\end{singlespace}
+Here PolyList is a self-defined data type as below.
+\begin{singlespace}
+\begin{lstlisting}[language=Haskell,basicstyle=\small]
+  data PolyList[A] = Nil
+	| Cons A (PolyList[A]);
+\end{lstlisting}
+\end{singlespace}
+Hence, the parser is a function which accepts a series of symbols and returns a series of bindings of such symbols and its matching result. Within the general combinator library, we will use this type all the time.
+
+\section{Primitive Parsers}
+Before starting parsing, we need several primitive parsers as our basis to construct our parsers. First is a parser that always parses a given string and returns a certain result regardless of its input. We call this parser \textbf{succeed}. This parser is defined as below.
+\begin{singlespace}
+\begin{lstlisting}[language=Haskell,basicstyle=\small]
+  let succeed[S, R] (result: R): Parser[S, R] =
+	\(input: PolyList[S]) -> 
+	createList[Binding[S, R]] (input, result);
+\end{lstlisting}
+\end{singlespace}
+A variation of succeed is a parser that that parses an empty string, which is called \textbf{epsilon} in grammar theory.
+\begin{singlespace}
+\begin{lstlisting}[language=Haskell,basicstyle=\small]
+  let epsilon[S]: Parser[S, Unit] = succeed[S, Unit] ();
+\end{lstlisting}
+\end{singlespace}
+Another primitive parser is \textbf{fail} which always fails to recognize any inputs and returns an empty list of results.
+\begin{singlespace}
+\begin{lstlisting}[language=Haskell,basicstyle=\small]
+  let fail[S, R]: Parser[S, R] =
+	\(input: PolyList[S]) -> Nil[Binding[S, R]];
+\end{lstlisting}
+\end{singlespace}
+We need these trivial parsers to build new parsers later.
+
+\section{Elementary Combinators}
+With the primitive parsers above, we now are able to build a parser for any languages constructed according to certain grammars. But to facilitate parsing, we need more powerful and reusable parsers. To accomplish this, we define some elementary parser combinators as partially parameterized higher-order functions. For notation convenience, we use some symbols to denote these functions.
+
+The first one is a sequential parser. This parser accepts two parsers and applies the first one on the input and then the next one on the rest string. To implement this, we need several helper functions in advance. They are listed as below.
+\begin{singlespace}
+\begin{lstlisting}[language=Haskell,basicstyle=\small]
+  let rec map[A, B] (f: A -> B) (l: PolyList[A]): PolyList[B] =
+    case l of
+        Nil       -> Nil[B]
+     |  Cons x xs -> Cons[B] (f x) (map [A, B] f xs);
+  let bind[S, A, B] 
+    (p: Parser[S, A]) (f: A -> Parser[S, B]): Parser[S, B] =
+    \(input: PolyList[S]) -> concat[Binding[S, B]] 
+    (map[Binding[S, A], PolyList[Binding[S, B]]] 
+    (\(v: Binding[S, A]) -> f v._2 v._1) (p input));
+\end{lstlisting}
+\end{singlespace}
+Function map is used to apply a function onto each element of a PolyList. And function bind binds the result of the first parser onto the second parser and yields a new parser. With these two parsers, now we can define our sequential parser, denoted with '$\sim$', as follows.
+\begin{singlespace}
+\begin{lstlisting}[language=Haskell,basicstyle=\small]
+  let (~)[S, A, B] (p: Parser[S, A]) 
+    (q: Parser[S, B]): Parser[S, (A, B)] =
+	bind[S, A, (A, B)] p (\(x: A) -> 
+	  bind[S, B, (A, B)] q (\(y: B) -> 
+	    succeed[S, (A, B)] (x, y)));
+\end{lstlisting}
+\end{singlespace}
+The sequential parser accepts two parsers and yields a parser containing a tuple with both two parsing results. Apart from the sequential parser, we also need a choice parser that concatenating two possible parsing results. This parser, denoted with '|' is defined as below.
+\begin{singlespace}
+\begin{lstlisting}[language=Haskell,basicstyle=\small]
+  let (<|>)[S, A] (p1: Parser[S, A]) (p2: Parser[S, A]): 
+    Parser[S, A] =
+	  \(input: PolyList[S]) -> 
+	    (p1 input) ++[Binding[S, A]] (p2 input);
+\end{lstlisting}
+\end{singlespace}
+Although now we can build a parse tree of our own, but it is still impossible to combine parsers arbitrarily since these parsers yield different results. To solve this, we need some parser transformers that can alter the parser's result and transform it into our desired one.
+
+\section{Parser Transformers}
+
+\section{Advanced Combinators}
