@@ -332,10 +332,11 @@ First of all, let's define a parser \texttt{many} for applying a parser \texttt{
 
 \begin{lstlisting}
 let rec many[A] (p : Parser[A]) : Parser[PList[A]] =
-    choice[PList[A]] (bind[A, PList[A]] p (\(x : A) ->
-                      bind[PList[A], PList[A]] (many[A] p) (\(xs : PList[A]) ->
-                      result[PList[A]] (x +>[A] xs))))
-                     (result[PList[A]] (Nil[A]));
+    choice[PList[A]]
+        (bind[A, PList[A]] p (\(x : A) ->
+         bind[PList[A], PList[A]] (many[A] p) (\(xs : PList[A]) ->
+         result[PList[A]] (x +>[A] xs))))
+        (result[PList[A]] (Nil[A]));
 
 let many1[A] (p : Parser[A]) : Parser[PList[A]] =
     bind[A, PList[A]] p (\(x : A) ->
@@ -362,17 +363,19 @@ We only have parsers that will produce one single character or a sequence of cha
 \begin{lstlisting}
 let natural : Parser[Int] =
     let eval (xs : PList[Char]) =
-        foldl[Int, Int] (\(b : Int) (a : Int) -> 10 * b + a)
-                        0
-                        (map[Char, Int] (\(c : Char) -> java.lang.Character.digit(c, 10)) xs);
+        foldl[Int, Int]
+            (\(b : Int) (a : Int) -> 10 * b + a)
+            0
+            (map[Char, Int] (\(c : Char) -> java.lang.Character.digit(c, 10)) xs);
 
     bind[PList[Char], Int] (many1[Char] digit) (\(xs : PList[Char]) -> result[Int] (eval xs));
 
 let hexdecimal : Parser[Int] =
     let eval (xs : PList[Char]) =
-        foldl[Int, Int] (\(b : Int) (a : Int) -> 16 * b + a)
-                        0
-                        (map[Char, Int] (\(c : Char) -> java.lang.Character.digit(c, 16)) xs);
+        foldl[Int, Int]
+            (\(b : Int) (a : Int) -> 16 * b + a)
+            0
+            (map[Char, Int] (\(c : Char) -> java.lang.Character.digit(c, 16)) xs);
     (many1[Char] (oneof "1234567890abcdefABCDEF"))
         <$>[PList[Char], Int] (\(xs : PList[Char]) -> eval xs);
 
@@ -391,10 +394,13 @@ The \texttt{many} combinator parses a sequence of items, but sometimes, we may n
 \begin{lstlisting}
 let sepby1[A, B] (p : Parser[A]) (sep : Parser[B]) : Parser[PList[A]] =
     let rep[A, B] (p : Parser[A]) : Parser[A] =
-        bind[B, A] sep (\(s : B) -> bind[A, A] p (\(y : A) -> result[A] y));
-    bind[A, PList[A]]        p                       (\(x : A) ->
-    bind[PList[A], PList[A]] (many[A] (rep[A, B] p)) (\(xs : PList[A]) ->
-    result[PList[A]] (Cons[A] x (\(__ : Unit) -> xs))));
+        bind[B, A] sep
+                   (\(s : B) -> bind[A, A] p (\(y : A) -> result[A] y));
+    bind[A, PList[A]] p (\(x : A) ->
+        bind[PList[A], PList[A]]
+            (many[A] (rep[A, B] p))
+            (\(xs : PList[A]) ->
+                result[PList[A]] (Cons[A] x (\(__ : Unit) -> xs))));
 \end{lstlisting}
 
 Also, we could define a \texttt{sepby} that it could deal with the situation of empty matche:
@@ -407,7 +413,8 @@ let sepby[A, B] (p : Parser[A]) (sep : Parser[B]) : Parser[PList[A]] =
 Moreover, for the use cases like parsing \texttt{"[42,13,0]"}, we could have a combinators called \texttt{between}, which takes two parsers for open and close, and then yields the result between them.
 
 \begin{lstlisting}
-let between[L, R, P] (l : Parser[L]) (r : Parser[R]) (p : Parser[P]) : Parser[P] =
+let between[L, R, P] (l : Parser[L]) (r : Parser[R]) (p : Parser[P])
+        : Parser[P] =
     l *>[L, P] p <*[P, R] r;
 \end{lstlisting}
 
@@ -415,6 +422,251 @@ The operator \texttt{*>} is just an alias of \texttt{>>}.
 
 \section{Case Studies}
 \subsection{Simple Arithmetic Expression Parser}
+
+\subsubsection{Basic Definitions}
+
+The first parser I have made is a parser for simple arithmetic expression parser. Simple arithmetic expression, as all we have known, it could be defined as
+
+\begin{lstlisting}[language={}]
+expr   ::= term | expr + term | expr - term
+term   ::= factor | term * factor | term / factor
+factor ::= number | ( expr )
+\end{lstlisting}
+
+But it is obviously that this grammar has left recursion, so we could fix it by slightly modification:
+
+\begin{lstlisting}[language={}]
+expr   ::= term expr'
+expr'  ::= e | + term expr' | - term expr'
+term   ::= factor term'
+term'  ::= e | * factor term' | / factor term'
+factor ::= number | ( expr )
+\end{lstlisting}
+
+With the power of algebraic data type, we could define a syntax tree as an ADT type \texttt{ArithExpr}:
+
+\begin{lstlisting}
+data ArithExpr = Add ArithExpr ArithExpr
+               | Sub ArithExpr ArithExpr
+               | Mul ArithExpr ArithExpr
+               | Div ArithExpr ArithExpr
+               | Integer Int
+               ;
+\end{lstlisting}
+
+First of all, we define two parsers, one will parse symbol \texttt{'+'} and \texttt{'-'}, and the other will parse symbol \texttt{'*'} and \texttt{'/'}. Both of them will produce the corresponding function \texttt{ArithExpr -> ArithExpr -> ArithExpr}, which will produce the correct \texttt{ArithExpr} (\texttt{Add}, \texttt{Sub}, \texttt{Mul} and \texttt{Div}) with the two parameters.
+
+\begin{lstlisting}
+let arithExprAddSub : Parser[ArithExpr -> ArithExpr -> ArithExpr] =
+    let addop (a : ArithExpr) (b : ArithExpr) = Add a b;
+    let subop (a : ArithExpr) (b : ArithExpr) = Sub a b;
+
+    let add = (char '+')
+        $>[Char, ArithExpr -> ArithExpr -> ArithExpr] addop;
+    let sub = (char '-')
+        $>[Char, ArithExpr -> ArithExpr -> ArithExpr] subop;
+
+    add `choice[ArithExpr -> ArithExpr -> ArithExpr]` sub;
+
+let arithExprMulDiv : Parser[ArithExpr -> ArithExpr -> ArithExpr] =
+    let mulop (a : ArithExpr) (b : ArithExpr) = Mul a b;
+    let divop (a : ArithExpr) (b : ArithExpr) = Div a b;
+
+    let mul = (char '*')
+        $>[Char, ArithExpr -> ArithExpr -> ArithExpr] mulop;
+    let div = (char '/')
+        $>[Char, ArithExpr -> ArithExpr -> ArithExpr] divop;
+
+    mul `choice[ArithExpr -> ArithExpr -> ArithExpr]` div;
+\end{lstlisting}
+
+And then we will parse the signed integers,
+
+\begin{lstlisting}
+let arithExprSpace : Parser[Unit] =
+    many[Char] space $>[PList[Char], Unit] ();
+
+let arithExprInteger : Parser[ArithExpr] =
+    (((char '-') <*[Char, Unit] arithExprSpace)
+        >>[Char, ArithExpr] (natural <$>[Int, ArithExpr]
+                                (\(i : Int) -> Integer (0 - i))))
+    <|>[ArithExpr]
+    (((char '+') <*[Char, Unit] arithExprSpace)
+        >>[Char, ArithExpr] (natural <$>[Int, ArithExpr]
+                                (\(i : Int) -> Integer i)))
+    <|>[ArithExpr]
+    (natural <$>[Int, ArithExpr] (\(i : Int) -> Integer i));
+\end{lstlisting}
+
+The \texttt{arithExprInteger} parser will first check whether the input has prefix \texttt{'+'} or \texttt{'-'}, if succeeds, then it will modify the rest result, otherwise it will just return the natural number.
+
+The \texttt{arithExprSpace} parser will eat spaces.
+
+Finally, we will define our arithmetrc expression parser just like the definition above
+
+\begin{lstlisting}
+let arithExprBracketSurrounded[E] (p : Parser[E]) : Parser[E] =
+    between[Char, Char, E]
+        ((char '(') <*[Char, Unit] arithExprSpace)
+        ((char ')') <*[Char, Unit] arithExprSpace)
+        p;
+
+let rec arithExpr : Parser[ArithExpr] =
+    \(s : ParseInput) ->
+        chainl1[ArithExpr]
+            (arithExprTerm <*[ArithExpr, Unit] arithExprSpace)
+            (arithExprAddSub
+                <*[ArithExpr -> ArithExpr -> ArithExpr, Unit]
+                arithExprSpace)
+            s
+and arithExprTerm : Parser[ArithExpr] =
+    \(s : ParseInput) ->
+        chainl1[ArithExpr]
+            (arithExprFactor <*[ArithExpr, Unit] arithExprSpace)
+            (arithExprMulDiv
+                <*[ArithExpr -> ArithExpr -> ArithExpr, Unit]
+                arithExprSpace)
+            s
+and arithExprFactor : Parser[ArithExpr] =
+    \(s : ParseInput) ->
+        choice[ArithExpr]
+            (arithExprInteger <*[ArithExpr, Unit] arithExprSpace)
+            ((arithExprBracketSurrounded[ArithExpr] arithExpr)
+                <*[ArithExpr, Unit] arithExprSpace)
+            s;
+\end{lstlisting}
+
+First of all, \texttt{arithExprBracketSurrounded} parser will parse \texttt{( expr )} of \texttt{factor} as defined above. Then define \texttt{arithExpr}, \texttt{arithExprTerm} and \texttt{arithExprFactor} corresponding to \texttt{expr}, \texttt{term} and \texttt{factor} definitions. I have used a new parser combinator \texttt{chainl1} for parsing non-empty sequence of items separated by operators that associate to the left. Take \texttt{arithExpr} as an example, the \texttt{chainl1} will parse a sequence of \texttt{arithExprTerm} that separated by \texttt{arithExprAddSub}, and then reduce the result by applying the result of \texttt{arithExprAddSub}. The \texttt{arithExprSpace} parser only for consuming the empty spaces, which could be completely ignored.
+
+Finally, I also provide a helper function to evaluate the syntax tree to an integer:
+
+\begin{lstlisting}
+let rec arithExprEval (e : ArithExpr) : Int =
+    case e of
+        Integer i -> i
+     |  Add e1 e2 -> (arithExprEval e1) + (arithExprEval e2)
+     |  Sub e1 e2 -> (arithExprEval e1) - (arithExprEval e2)
+     |  Mul e1 e2 -> (arithExprEval e1) * (arithExprEval e2)
+     |  Div e1 e2 -> (arithExprEval e1) / (arithExprEval e2)
+     ;
+\end{lstlisting}
+
+It is obvious and easy to understand. If it is a \texttt{Integer}, then the value is the first parameter of itself. For those operations, \texttt{Add}, \texttt{Sub}, \texttt{Mul} and \texttt{Div}, call \texttt{arithExprEval} on each of their parameters, and then apply the operation on the result to calculate the results of operations.
+
+\subsubsection{Unit Tests}
+
+For unit test, I chose to test the following cases
+
+\begin{lstlisting}[language={}]
+1
+1+1
+1-1
+1*1
+1/1
+1+2*3
+(1+2)*3
+1*2+3
+1*(2+3)
+1+2*(3-4)/5
+\end{lstlisting}
+
+Take the first one as an example. To apply a string \texttt{"1"} to the parser \texttt{arithExpr} and then print its result to the console, the library have provided several helper functions for that
+
+\begin{lstlisting}
+let result = arithExpr `parseString[ArithExpr]` "1";
+println (parseOutputToString[ArithExpr] arithExprToString result);
+\end{lstlisting}
+
+The function \texttt{parseString} takes two parameters, the first one is the result, and the second one is a \texttt{String}. It will prepare the \texttt{ParseInput} and then pass it to the parser.
+
+The function \texttt{parseOutputToString} is a helper function that can convert the \texttt{ParseOutput} to a \texttt{String}, the first parameter is a function \texttt{T -> String} for converting the parse result to \texttt{String}, and the second parameter is the parse output.
+
+Run the program and you will see the output
+
+\begin{lstlisting}
+[(Integer(1), "" @ ""<default>" (1:2)")]
+\end{lstlisting}
+
+\texttt{Integer(1)} is the parse result, and the second one is the \texttt{ParseInput}. The empty string on the left of \texttt{@} is the rest of the input string, and the current \texttt{SourcePos} is on the right (source name is ``<default>'', at line 1, column 2).
+
+The rest test cases' outputs are
+
+\begin{lstlisting}[language={}]
+-- 1+1
+[(Add(Integer(1), Integer(1)), "" @ ""<default>" (1:4)"),
+ (Integer(1), "+1" @ ""<default>" (1:2)")]
+
+-- 1-1
+[(Sub(Integer(1), Integer(1)), "" @ ""<default>" (1:4)"),
+ (Integer(1), "-1" @ ""<default>" (1:2)")]
+
+-- 1*1
+[(Mul(Integer(1), Integer(1)), "" @ ""<default>" (1:4)"),
+ (Integer(1), "*1" @ ""<default>" (1:2)")]
+
+-- 1/1
+[(Div(Integer(1), Integer(1)), "" @ ""<default>" (1:4)"),
+ (Integer(1), "/1" @ ""<default>" (1:2)")]
+
+-- 1+2*3
+[(Add(Integer(1), Mul(Integer(2), Integer(3))),
+    "" @ ""<default>" (1:6)"),
+ (Add(Integer(1), Integer(2)),
+    "*3" @ ""<default>" (1:4)"),
+ (Integer(1), "+2*3" @ ""<default>" (1:2)")]
+
+-- (1+2)*3
+[(Mul(Add(Integer(1), Integer(2)), Integer(3)),
+    "" @ ""<default>" (1:8)"),
+ (Add(Integer(1), Integer(2)),
+    "*3" @ ""<default>" (1:6)")]
+
+-- 1*2+3
+[(Add(Mul(Integer(1), Integer(2)), Integer(3)),
+    "" @ ""<default>" (1:6)"),
+ (Mul(Integer(1), Integer(2)),
+    "+3" @ ""<default>" (1:4)"),
+ (Integer(1),
+    "*2+3" @ ""<default>" (1:2)")]
+
+-- 1*(2+3)
+[(Mul(Integer(1), Add(Integer(2), Integer(3))),
+    "" @ ""<default>" (1:8)"),
+ (Integer(1),
+    "*(2+3)" @ ""<default>" (1:2)")]
+
+-- 1+2*(3-4)/5
+[(Add(Integer(1), Div(Mul(Integer(2), Sub(Integer(3), Integer(4))),
+                      Integer(5))),
+    "" @ ""<default>" (1:12)"),
+ (Add(Integer(1), Mul(Integer(2), Sub(Integer(3), Integer(4)))),
+    "/5" @ ""<default>" (1:10)"),
+ (Add(Integer(1), Integer(2)),
+    "*(3-4)/5" @ ""<default>" (1:4)"),
+ (Integer(1),
+    "+2*(3-4)/5" @ ""<default>" (1:2)")]
+\end{lstlisting}
+
+Because of the nature of parser combinators, it will try to produce all possible results in the parse output, but we only need to focus on the first parse result.
+
+To evaluate the arithmetic expression, we could make use of the \texttt{<\$>} operator. For example
+
+\begin{lstlisting}
+let evaluating = arithExpr
+    <$>[ArithExpr, Int] (\(e : ArithExpr) -> arithExprEval e);
+let result = evaluating `parseString[Int]` "1+1*(2+3)";
+println (parseOutputToString[Int] intToString result);
+\end{lstlisting}
+
+This program will output
+
+\begin{lstlisting}
+[(6, "" @ ""<default>" (1:10)"),
+ (2, "*(2+3)" @ ""<default>" (1:4)"),
+ (1, "+1*(2+3)" @ ""<default>" (1:2)")]
+\end{lstlisting}
+
+So the value of \texttt{1+1*(2+3)} is 6.
 
 \subsection{XML Parser}
 
