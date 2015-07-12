@@ -1,11 +1,51 @@
 \chapter{Pretty Printer}
-
+This chapter mainly focuses on the implementation details of a pretty printer combinator library. And the design most bases on Wadler's idea\cite{wadler2003prettier}.
 
 \section{Introduction}
 
-language independent pretty-printing
+A pretty printer's job is to lay out structured data in a human-friendly way. Take a simple example, a tree of type.
 
-soling the problem of displaying internal data structures in a human-friendly form.
+\begin{lstlisting}[language=Haskell]
+    data Tree = Node String List[Tree];
+\end{lstlisting}
 
-and surely we are not going to compete with typesetting systems (Tex)
+The tree Node "aaa" (Cons[Tree] (Node "bbb" (Nil[Tree])) (Nil[Tree])) is much easier to read if it is presented as:
+
+\begin{lstlisting}
+    aaa[
+      bbb
+    ]
+\end{lstlisting}
+
+And a pretty printer combinator library's work is to make the implementation of a pretty printer quickly and easily. So it's about software reuse. Then the nature of my work is to find specific programming idioms during the process of writing a pretty printer. And these programming idioms are also called combinators. For example, when you want to get the tree layout above, just use several combinators provided by my library:
+
+\begin{lstlisting}
+    text "aaa" <> (nest 2 (line <> text "bbb"))
+\end{lstlisting}
+
+Choosing appropriate layout and converting it into a string at the end are done by the library. And more specifically, the library should choose a layout which occupies a minimal number of lines(with line width's constraint) while retaining indentation that reflects the underlying structure information.
+
+\emph{Remark}
+Note that we are considering the problem of displaying internal data structure into a human-readable form, not improving a layout of an existing text. And surely, we are not going to compete with typesetting systems(such as TEX). However, our library is to strike a balance between sophistication, ease of use, optimality of output.  
+
+
+\section{A Sketch of the Design}
+
+
+
+
+\section{A primitive pretty printer}
+
+
+
+
+\section{A pretty printer with alternative layouts}
+
+
+
+
+\section{Improving efficiency}
+
+
+
 
