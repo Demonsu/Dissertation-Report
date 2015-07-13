@@ -792,7 +792,8 @@ Similar to attributes, process instruction parser \texttt{xmlProcInst} parser is
 \begin{lstlisting}
 let xmlProcInst : Parser[XMLNode] =
     (string "<?") >>[PString, Unit] xmlSpace
-        >>[Unit, PString] xmlKey >>=[PString, XMLNode] (\(target : PString) ->
+        >>[Unit, PString] xmlKey
+        >>=[PString, XMLNode](\(target : PString) ->
             xmlSpace >>[Unit, PList[XMLNode]] xmlAttrs
                 <*[PList[XMLNode], PString]
                     (xmlSpace >>[Unit, PString] (string "?>"))
@@ -859,11 +860,12 @@ let parseXML : Parser[PList[XMLNode]] =
     (many[XMLNode] xmlProcInst)
         >>=[PList[XMLNode], PList[XMLNode]] (\(procinst1 : PList[XMLNode]) ->
             xmlElement >>=[XMLNode, PList[XMLNode]] (\(root : XMLNode) ->
-                (many[XMLNode] xmlProcInst) >>=[PList[XMLNode], PList[XMLNode]]
-                    (\(procinst2 : PList[XMLNode]) ->
-                        result[PList[XMLNode]]
-                            (procinst1 ++[XMLNode]
-                                (root +>[XMLNode] procinst2)))));
+                (many[XMLNode] xmlProcInst)
+                    >>=[PList[XMLNode], PList[XMLNode]]
+                        (\(procinst2 : PList[XMLNode]) ->
+                            result[PList[XMLNode]]
+                                (procinst1 ++[XMLNode]
+                                    (root +>[XMLNode] procinst2)))));
 \end{lstlisting}
 
 \texttt{parseXML} parser first parse some process instructions, and then parse one root XML element, after that, try to parse some process instructions after that element. Concatenate them together to be a \texttt{PList[XMLNode]} as the result.
