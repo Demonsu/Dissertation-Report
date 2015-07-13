@@ -1338,7 +1338,7 @@ Here is a simple example to run tests.
 
 \begin{lstlisting}
 let testFJExprVariable : TestFn = {
-    name = "Test Varialbe a",
+    name = "Test Variable a",
     fn   = \(__ : Unit) -> {
         assertParseStringResult[FJExpr]
             fjExprEq
@@ -1366,7 +1366,7 @@ The function \texttt{runTestSuites} is a helper function for running a list of t
 
 The function \texttt{assertParseStringResult} is a helper function, which will judge whether the first parse result is equal to the provided one, it will also prints the expected and actual parse outputs to the screen.
 
-An example in \ref{fig:monadic_runalltests} shows how the test framework runs.
+An example in Figure \ref{fig:monadic_runalltests} shows how the test framework runs.
 
 \begin{figure}[h!]
     \centering
