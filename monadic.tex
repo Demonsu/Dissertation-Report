@@ -37,6 +37,7 @@ src
 |-- example_f2j_parser.sf // Example of F2J parser
 |-- example_fj_parser.sf  // Example of FWJava parser
 |-- example_parser.sf     // Example of basic parsers
+|-- example_xml_parser.sf // Example of XML parsers
 |-- f2j_parser.sf         // Definition of F2J parser
 |-- fj_parser.sf          // Definition of FWJava parser
 |-- include.py            // C-like include script
@@ -50,7 +51,6 @@ src
 |-- run.sh                // Helper script for running test program
 |-- show.sf               // Definition of Show[A]
 |-- simple_arith_expr_parser.sf // Definition of arithmetic expr parser
-|-- test.sf               // Definition of test framework
 |-- test_all.sf           // Run all test cases
 |-- test_f2j_parser.sf    // Test cases for F2J parser
 |-- test_fj_parser.sf     // Test cases for FWJava parser
@@ -1132,14 +1132,22 @@ data F2JADTBody = F2JADTNormalBody F2JType PList[F2JADTAlternative]
                 ;
 \end{lstlisting}
 
-The \texttt{F2JBindingParam} represents the parameters of a \texttt{let} binding, such as \texttt{(a : A)}. The ADT bodies has two variants, the first one is the normal form of an ADT, and the second one is for records, which looks like \texttt{{a: A, b: B}}.
+The \texttt{F2JBindingParam} represents the parameters of a \texttt{let} binding, such as \texttt{(a : A)}. The ADT bodies has two variants, the first one is the normal form of an ADT, and the second one is for records, which looks like \texttt{\{a: A, b: B\}}.
 
 Finally, here is our F2J expression definition
 
-\begin{lstlisting}
+\begin{lstlisting}[xleftmargin=0pt]
 data rec
-    F2JBindingBody = F2JLetBindingBody     String PList[F2JType] PList[F2JBindingParam] Maybe[F2JType] F2JExpr
-                   | F2JLetRecBindingBody  String PList[F2JType] PList[F2JBindingParam] F2JType        F2JExpr
+    F2JBindingBody = F2JLetBindingBody     String
+                                           PList[F2JType]
+                                           PList[F2JBindingParam]
+                                           Maybe[F2JType]
+                                           F2JExpr
+                   | F2JLetRecBindingBody  String
+                                           PList[F2JType]
+                                           PList[F2JBindingParam]
+                                           F2JType
+                                           F2JExpr
 
 and F2JApplicationParam = F2JApplicationParamExpr F2JExpr
                         | F2JApplicationParamType PList[F2JType]
@@ -1149,29 +1157,29 @@ and F2JCaseAlternative = F2JCaseAlternative String PList[String] F2JExpr
 and F2JRecordItem = F2JRecordItem String F2JExpr
 
             -- Application
-and F2JExpr = F2JApplication        F2JExpr                  F2JApplicationParam
-            -- Let binding                              ;    expr
-            | F2JLet                PList[F2JBindingBody]    F2JExpr
+and F2JExpr = F2JApplication    F2JExpr                  F2JApplicationParam
+            -- Let binding                          ;    expr
+            | F2JLet            PList[F2JBindingBody]    F2JExpr
             -- Let rec binding                          ;    expr
-            | F2JLetRec             PList[F2JBindingBody]    F2JExpr
+            | F2JLetRec         PList[F2JBindingBody]    F2JExpr
             -- Lambda function params                   inner expr
-            | F2JLambda             PList[F2JBindingParam]   F2JExpr
+            | F2JLambda         PList[F2JBindingParam]   F2JExpr
             -- case of
-            | F2JCase               F2JExpr                  PList[F2JCaseAlternative]
+            | F2JCase           F2JExpr            PList[F2JCaseAlternative]
             -- ADT
-            | F2JADT                PList[F2JADTBody]        F2JExpr
-            | F2JRecADT             PList[F2JADTBody]        F2JExpr
-            -- Alias: type          X                      = Y                         ; expr
-            | F2JTypeAlias          F2JType                  F2JType                     F2JExpr
+            | F2JADT            PList[F2JADTBody]        F2JExpr
+            | F2JRecADT         PList[F2JADTBody]        F2JExpr
+            -- Alias: type      X                  = Y              ; expr
+            | F2JTypeAlias      F2JType            F2JType          F2JExpr
             -- Tuple
-            | F2JPair               PList[F2JExpr]
+            | F2JPair           PList[F2JExpr]
             -- Int literal
-            | F2JIntLiteral         String
+            | F2JIntLiteral     String
             -- String Literal
-            | F2JStringLiteral      String
-            | F2JVariable           String
-            | F2JBlock              PList[F2JExpr]
-            | F2JRecord             PList[F2JRecordItem]
+            | F2JStringLiteral  String
+            | F2JVariable       String
+            | F2JBlock          PList[F2JExpr]
+            | F2JRecord         PList[F2JRecordItem]
             ;
 \end{lstlisting}
 
@@ -1247,8 +1255,122 @@ It is easy to interpret the result, because it's structure just like the input F
 
 \section{Discussions}
 
+While I was implementing this library, I have encountered several problems. Most of them were solved by other teammates in the group (HKU Programming Language Group), but still have some problems has to be solved or to be improved.
+
+\subsection{Error Reports}
+
+Currrently, the \texttt{Parser} is defined as
+
+\begin{lstlisting}
+type Parser[A] = ParseInput -> ParseOutput[A];
+\end{lstlisting}
+
+It is hard to report errors, the user may not knows where and why the error happens. So it would be better if the \texttt{ParseOutput} could carry error messages and locations.
+
+If the parser could carry error messages, then it would be easy to add a combinator to for specifying an error message when parse failed. For example
+
+\begin{lstlisting}
+let result = (identifier <?> "Parse failed, expecting an identifier")
+    `parseString[PString]` "1234";
+\end{lstlisting}
+
+The operator \texttt{\textless?\textgreater} is a combinator to yield a parser which will report a message when parse failed.
+
+\subsection{Performance}
+
+Currently, the parser make use of a lazy evaluation list, which could avoids lots of useless computations. But if the library itself will produce many useless results in the front of the list, then lazy evaluation cannot help. The parsers for case studies still can be optimized to have better performance.
+
+\subsection{Usability}
+
+The parser library provides some helpful combinators, but just for case studies. If this library is going to be used in practice, it should provide more basic combinators for parsing more complicated texts.
+
+Also, the parser currently assumes all inputs are strings, but actually the input could be anything with state transformations. A string is a list of states, each state has a character and the location in string. You could get the next character (state) from the current state.
+
 \section{Miscellaneous}
 \subsection{C-like Include Script}
 
+Currently F2J does not support module system, so that the whole program must be written in one file. But in practice, when the program has over 1000 lines, it would be very hard to manage and debug. In this project, the file that contains all test cases has over 4000 lines of F2J code.
+
+It would be better if just separate those codes into different files and then combine them together before compile. To achieve that goal, I wrote a script \texttt{include.py} in Python to perform C-like include mechanism.
+
+The script will try to find a special block comment, which starts with \texttt{\{-\#} and ends with \texttt{\#-\}}, and then find a keyword \texttt{INCLUDE} in the block with the file name to be included. For example
+
+\begin{lstlisting}
+{-#
+    INCLUDE "parser.sf"
+    INCLUDE "test.sf"
+#-}
+\end{lstlisting}
+
+When process this file with \texttt{include.py}, it will search for the special block comment and get the statements \texttt{INCLUDE "parser.sf"} and \texttt{INCLUDE "test.sf"}. And then, it will find the \texttt{parser.sf} and \texttt{test.sf} files in the search path, read them and analysis their include statements recusively. After that, paste the combined files in place of the include statements with the rest of the file contents in the target file.
+
+Because the special block comments are valid F2J comments, so that they will be ignored when compiling.
+
 \subsection{Test Framework}
 
+If the project is small, then writing and runing tests are easy. But when your code grows large, tests become a large code base and become hard to manage and modify.
+
+So I use F2J to write a simple test framework, supporting test functions, test suites and assert functions.
+
+The most basic definitions are in \texttt{testfx.sf}.
+
+Test function is a record, which contains a name and a function to run the test.
+
+\begin{lstlisting}
+type TestFn = {
+    name : String,
+    fn   : Unit -> Bool
+};
+\end{lstlisting}
+
+If test succeeded, the function should return \texttt{True}, \texttt{False} otherwise.
+
+For test suite, it is a collection of \texttt{TestFn} with name.
+
+\begin{lstlisting}
+type TestSuite = {
+    name : String,
+    fns  : PList[TestFn]
+};
+\end{lstlisting}
+
+Here is a simple example to run tests.
+
+\begin{lstlisting}
+let testFJExprVariable : TestFn = {
+    name = "Test Varialbe a",
+    fn   = \(__ : Unit) -> {
+        assertParseStringResult[FJExpr]
+            fjExprEq
+            fjExprToString
+            (FJVariable "a")
+            fjExpr
+            "a"
+    }
+};
+
+let testFJParserSuite : TestSuite = {
+    name = "Test Feather Weight Java parser",
+    fns  = testFJExprVariable
+                +>[TestFn] (Nil[TestFn])
+};
+
+let parserTestSuites : PList[TestSuite] =
+    testFJParserSuite
+        +>[TestSuite] (Nil[TestSuite]);
+
+runTestSuites parserTestSuites;
+\end{lstlisting}
+
+The function \texttt{runTestSuites} is a helper function for running a list of test suites.
+
+The function \texttt{assertParseStringResult} is a helper function, which will judge whether the first parse result is equal to the provided one, it will also prints the expected and actual parse outputs to the screen.
+
+An example in \ref{fig:monadic_runalltests} shows how the test framework runs.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{imgs/Monadic_RunAllTests}
+    \caption{Run all tests}
+    \label{fig:monadic_runalltests}
+\end{figure}

@@ -1,1 +1,27 @@
 \chapter{Discussion}
+
+\begin{itemize}
+\item Module System
+
+Currently F2J only supports single file compilation, which means that I have to put all the codes in one file. It is hard to manage the project and reuse most of the codes.
+
+\item Exceptions
+
+F2J does not supports exceptions, so that I cannot use those Java functions that will throw exceptions, such as I/O libraries.
+
+\item Type Inferences
+
+F2J's type parameters must be applied explicitly, which makes the code looks too verbose and hard to read.
+
+\item Macros
+
+F2J does not support macros now, but it is useful sometimes. For example, when I was using \texttt{Thunk} in the library, I have to construct a \texttt{Thunk} explicitly, such as
+
+\begin{lstlisting}
+let singleton[A] (x : A) : PList[A] =
+    Cons[A] x (\(__: Unit) -> (Nil[A]));
+\end{lstlisting}
+
+If F2J supports macros, the lambda function could be replaced by a more expressive macro.
+
+\end{itemize}
