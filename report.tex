@@ -1,5 +1,6 @@
 \documentclass[12pt,a4paper,oneside]{report}
 
+\usepackage[T1]{fontenc}
 \usepackage{fontspec}
 \setmainfont{Palatino}
 \setmonofont[Scale=0.9]{Lucida Sans Typewriter}
@@ -53,7 +54,7 @@ left=25mm,top=25mm,bottom=25mm]{geometry}
 \lstset{
     basicstyle=\singlespacing\footnotesize\ttfamily,
     breaklines=true,
-    morekeywords={case, of, in, new, let, if, then, else, rec, data, type, (), Int, String, Char, Bool, Unit, forall}
+    morekeywords={case, of, in, new, let, if, then, else, rec, data, type, (), Int, String, Char, Bool, Unit, forall, and}
 }
 
 \title{Efficient Parser and Pretty Printer Combinators in F2J}
