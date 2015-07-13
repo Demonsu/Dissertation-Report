@@ -156,5 +156,50 @@ However, when combining the parser \textbf{many} and \textbf{option} on an input
 Now we have already had a relatively complete parser combinator library. In the next chapter, we will build a simple arithmetic parser based on the existing library to show how it works.
 
 \section{Arithmetical Expression}
+This section demonstrates an arithmetical expression and its generalized version to provide a glimpse of using the library.
+
+An arithmetical expression can be constructed by an integer (we do not consider any floating numbers here), a variable, a function call and several operators with predefined priorities. This data structure can be described as follows.
+\begin{lstlisting}
+  data Expr = Con Int
+		|	Var CharList
+		|	Fun CharList PolyList[Expr]
+		|	Add Expr Expr
+		|	Min Expr Expr
+		|	Mul Expr Expr
+		|	Div Expr Expr;
+\end{lstlisting}
+This grammar can be split into two components. The first one is \textbf{factor} which contains a constant, a variable, a function call or an expression and is separated by '*' or '/'.  The second one is \textbf{term} which contains \textbf{factors} and is separated by '+' or '-'.
+To parse this grammar, we will define three combinators by combining the existing combinators in our library. The first combinator is called \textbf{fact} which designed to parse a factor. The second combinator is called \textbf{term} that is to parse a term. The third combinator is \textbf{expr} that parses the expression as a whole. These three parsers are shown as below.
+\begin{lstlisting}
+  let rec fact: Parser[Char, Expr] =
+	(integer <@[Char, Int, Expr] (\(v: Int) -> Con v))
+	<|>[Char, Expr] ((identifier 
+		~[Char, CharList, (CharList -> Expr)]
+			(option[Char, PolyList[Expr]] (parenthesized[PolyList[Expr]] (commaList[Expr] expr))
+			 <?@[Char, PolyList[Expr], (CharList -> Expr)] (\(cs: CharList) -> Var cs, (flip[CharList, PolyList[Expr], Expr] (\(cs: CharList) -> \(pl: PolyList[Expr]) -> Fun cs pl)))))
+		<@[Char, (CharList, (CharList -> Expr)), Expr] (\(v: (CharList, (CharList -> Expr))) -> v._2 v._1))
+	<|>[Char, Expr] (parenthesized[Expr] expr)
+and term: Parser[Char, Expr] = chainr[Char, Expr] fact (symbol '*' <@[Char, Char, (Expr -> Expr -> Expr)] (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Mul a b)
+							<|>[Char, (Expr -> Expr -> Expr)] (symbol '/' <@[Char, Char, (Expr -> Expr -> Expr)] (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Div a b)))
+and expr: Parser[Char, Expr] = chainr[Char, Expr] term (symbol '+' <@[Char, Char, (Expr -> Expr -> Expr)] (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Add a b)
+							<|>[Char, (Expr -> Expr -> Expr)] (symbol '-' <@[Char, Char, (Expr -> Expr -> Expr)] (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Min a b)));
+\end{lstlisting}
+Now we can just use \textbf{expr} to parse the arithmetic expressions. However, this combinator only suites for expressions with '+', '-', '*', '/' operations. To generalize it, we can define a parser that can parse any expressions containing any predefined operations with different priorities. This task is relatively easy thanks to the combinators in the library. We firstly define an operation type \textbf{Op} which is a tuple that contains a symbol of operation and its behaviour. Then we define a combinator \textbf{gen} that accepts such operations and a parser, and applies the operation on the parsing result. By using \textbf{gen}, we can change our arithmetical expression parser into the below format with some helper combinators introduced.
+\begin{lstlisting}
+  type Op[A] = (Char, A -> A -> A);
+let gen[A] (ops: PolyList[Op[A]]) (p: Parser[Char, A]): Parser[Char, A] =
+	chainr[Char, A] p (choice[Char, (A -> A -> A)] 
+		(map[Op[A], Parser[Char, (A -> A -> A)]] 
+			(\(op: Op[A]) -> 
+				(symbol op._1 <@[Char, Char, (A -> A -> A)] (\(c: Char) -> op._2))) ops));
+let multis: PolyList[Op[Expr]] = Cons[Op[Expr]] ('*', \(a: Expr) -> \(b: Expr) -> Mul a b) (Cons[Op[Expr]] ('/', \(a: Expr) -> \(b: Expr) -> Div a b) (Nil[Op[Expr]]));
+let addis: PolyList[Op[Expr]] = Cons[Op[Expr]] ('+', \(a: Expr) -> \(b: Expr) -> Add a b) (Cons[Op[Expr]] ('-', \(a: Expr) -> \(b: Expr) -> Min a b) (Nil[Op[Expr]]));
+let expr1: Parser[Char, Expr] = foldr[PolyList[Op[Expr]], Parser[Char, Expr]] (gen[Expr]) fact (Cons[PolyList[Op[Expr]]] addis (Cons[PolyList[Op[Expr]]] multis (Nil[PolyList[Op[Expr]]])));
+\end{lstlisting}
+The parser \textbf{expr1} does the same thing as \textbf{expr} but this way it is combined with generalized combinators. We can also parse other kinds of expressions by providing self-defined operations. To parse a more complicated grammar with possible variables bindings, we will introduce a skeleton in the next section.
+
+\section{Self Application}
+
+Up to now, we have implemented a recursive descent parser with our library. But there is a problem that each time the parser fails, it will backtrack from the beginning and re-parse with another alternative. This can significantly slow down the parsing efficiency. To solve it, we have explored packrat parsing technique and introduced it in the next section.
 
 \section{Packrat Parsing}
