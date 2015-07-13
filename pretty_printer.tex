@@ -1,15 +1,15 @@
 \chapter{Pretty Printer}
-This chapter mainly focuses on the implementation details of a pretty printer combinator library. And the design most bases on Wadler's idea\cite{wadler2003prettier}.
+This chapter mainly focuses on the implementation details of a pretty printer combinator library.
 
 \section{Introduction}
 
 A pretty printer's job is to lay out structured data in a human-friendly way. Take a simple example, a tree of type.
 
-\begin{lstlisting}[language=Haskell]
+\begin{lstlisting}
     data Tree = Node String List[Tree];
 \end{lstlisting}
 
-The tree Node "aaa" (Cons[Tree] (Node "bbb" (Nil[Tree])) (Nil[Tree])) is much easier to read if it is presented as:
+The tree \texttt{Node "aaa" (Cons[Tree] (Node "bbb" (Nil[Tree])) (Nil[Tree]))} is much easier to read if it is presented as:
 
 \begin{lstlisting}
     aaa[
@@ -26,26 +26,116 @@ And a pretty printer combinator library's work is to make the implementation of 
 Choosing appropriate layout and converting it into a string at the end are done by the library. And more specifically, the library should choose a layout which occupies a minimal number of lines(with line width's constraint) while retaining indentation that reflects the underlying structure information.
 
 \emph{Remark}
-Note that we are considering the problem of displaying internal data structure into a human-readable form, not improving a layout of an existing text. And surely, we are not going to compete with typesetting systems(such as TEX). However, our library is to strike a balance between sophistication, ease of use, optimality of output.  
+Note that we are considering the problem of displaying internal data structure into a human-readable form, not improving a layout of an existing text. And surely, we are not going to compete with typesetting systems(such as TEX). However, our library is to strike a balance between sophistication, ease of use and optimality of output.
 
 
-\section{A Sketch of the Design}
+\section{A Bridge between Data Structure and Layout}
+
+In Oppen's pretty-printer\cite{oppen1980prettyprinting}, the small language he defined serves as the bridge between application specific data structures and pretty layouts. User describes their internal data structures by using the small language. Then the interpreter of Oppen's pretty-printer takes these descriptions as input to calculate the final pretty layout. It looks like that users need to add tags to their data so that the interpreter can recognize it.
+
+When things come to functional programming, algebra has natural advantage to serve as the bridge. As mentioned in Hughes's pretty-printing library\cite{hughes1995design}, his library works with 'pretty documents', of type \textit{Doc}. Take a naive \textit{Doc} for example:
+
+\begin{lstlisting}
+    Data Doc = NIL
+            |  TEXT String Doc
+            |  LINE Int Doc
+    ;
+\end{lstlisting}
+ 
+\emph{Remark}Since infix constructors are not supported in F2J. Please be noted that "TEXT" and "LINE" are represented in prefix form.
+ 
+A pretty-printer will be a function mapping any value to the \textit{Doc} above. And from the definition of the \textit{Doc}, we can see that itself has indentations and line breaks which means the \textit{Doc} knows how to lay itself out prettily. Apparently, some high level combinators should also be offered to users, such as \textit{nest, showDoc}.
+
+\section{A Primitive Pretty Printer}
+
+To begin, we consider the simple case when we just use the naive \textit{Doc} in our library which means each document will only have one possible layout. And six operators are defined together with it:
+
+\begin{lstlisting}
+let nil = NIL
+let (<>) (x: Doc) (y: Doc): Doc
+let nest (i: Int) (x: Doc): Doc
+let text (s: String): Doc
+let line: Doc
+let showDoc(x: Doc): String
+\end{lstlisting}
+ 
+Here \textbf{<>} is for concatenating two documents. The function \textbf{text} converts a string to the \textbf{Doc} and the \textbf{line} denotes a line break. The function \textbf{nest} adds indentation to every new line of the following documents. Finally, the function \textbf{showDoc} converts the \textit{Doc} to a string. Again, take the tree example:
+
+\begin{lstlisting}
+
+Node "aaa"
+   (Cons[BTree] (Node "bbbbb" (Nil[BTree]))
+   (Cons[BTree] (Node "eee" (Nil[BTree]))
+   (Cons[BTree] (Node "ffff" (Nil[BTree]))
+   (Nil[BTree]))))
+
+\end{lstlisting}
+
+The above internal data can be printed in below layout:
+
+\begin{lstlisting}
+aaa[
+  bbbbb,
+  eee,
+  ffff
+]
+\end{lstlisting}
+
+The result is just a string containing "\verb|\|n" and " ". What the pretty-printer need to do is to use the six operators we provide above to describe the final result. In here, it's the function which converts a tree to a document.
+
+\begin{lstlisting}
+let rec showTree (tree: Tree): Doc=
+	case tree of
+			Node x xs	-> (text x) <> (showBracket xs)
+and
+showBracket (tree: List[Tree]): Doc=
+	case tree of
+			Nil 		-> nil
+		|	Cons x xs	-> (text "[") <> (nest 2 ((line) <> (showTrees (x +>[Tree] xs))))
+							<> (line) <> (text "]")
+and
+showTrees (tree: List[Tree]): Doc=
+	case tree of
+			Nil 		-> nil
+		|	Cons x xs	->
+		{
+			case xs of
+				Nil		-> (showTree x)
+			|	Cons y ys	-> (showTree x) <> (text ",") <> (line) <> (showTrees (y +>[Tree] ys))
+		}
+
+;
+\end{lstlisting}
+Then the tree can be represented as the following document:
+\begin{lstlisting}
+text "aaa" <> text "[" <>
+nest 2 (
+  line <> text "bbbbb" text "," <>
+  line <> text "eee" <> text ","
+  line <> text "fff" <>
+)
+line <> text "]"
+\end{lstlisting}
+It seems not so easy to print the above document. A further reduction can be done with it:
+\begin{lstlisting}
+text "aaa[" <>
+nest 2 line <> text "bbbbb," <>
+nest 2 line <> text "eee," <>
+nest 2 line <> text "fff" <>
+nest 0 line <> text "]"
+\end{lstlisting}
+Now, to get the final layout is very easy.
+
+\section{A Pretty Printer with Alternative Layouts}
 
 
 
 
-\section{A primitive pretty printer}
+\section{Improving Efficiency}
 
 
 
-
-\section{A pretty printer with alternative layouts}
-
-
-
-
-\section{Improving efficiency}
-
+\section{Case Studies}
 
 
 
