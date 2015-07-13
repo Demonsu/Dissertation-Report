@@ -3,13 +3,13 @@ This chapter mainly focuses on the implementation details of a general parser co
 
 \section{Type of Parser}
 The goal of a parsing task is to analyse a piece of code constructed according to a certain kind of grammar and then transfer it into a parse tree. This parse tree then can be utilized by a compiler to generate machine code. Many approaches can be used to define a basic parser type. For general parsing purposes, we define the parser type in F2J as follow.
-\begin{lstlisting}[language=Haskell,basicstyle=\small]
+\begin{lstlisting}
   type Binding[Symbol, Result] = (PolyList[Symbol], Result);
   type Parser[Symbol, Result] = 
 	PolyList[Symbol] -> PolyList[Binding[Symbol, Result]];
 \end{lstlisting}
 Here PolyList is a self-defined data type as below.
-\begin{lstlisting}[language=Haskell,basicstyle=\small]
+\begin{lstlisting}
   data PolyList[A] = Nil
 	| Cons A (PolyList[A]);
 \end{lstlisting}
@@ -22,7 +22,7 @@ Before starting parsing, we need several primitive parsers as our basis to const
 	\(input: PolyList[S]) -> 
 	createList[Binding[S, R]] (input, result);
 \end{lstlisting}
-A variation of succeed is a parser that that parses an empty string, which is called \textbf{epsilon} in grammar theory.
+A variation of succeed is a parser that parses an empty string, which is called \textbf{epsilon} in grammar theory.
 \begin{lstlisting}
   let epsilon[S]: Parser[S, Unit] = succeed[S, Unit] ();
 \end{lstlisting}
@@ -199,6 +199,9 @@ let expr1: Parser[Char, Expr] = foldr[PolyList[Op[Expr]], Parser[Char, Expr]] (g
 The parser \textbf{expr1} does the same thing as \textbf{expr} but this way it is combined with generalized combinators. We can also parse other kinds of expressions by providing self-defined operations. To parse a more complicated grammar with possible variables bindings, we will introduce a skeleton in the next section.
 
 \section{Self Application}
+As for a given string that follows BNF grammar, we can build a parser to parse all this kinds of strings. Things we need to do are firstly defining a type to associate variables under certain environment and implementing combinators that parse different components of a BNF string.
+
+First things first. We define a type called \textbf{Env} as a series of tuples with the first element denoting a key and the second one its value. 
 
 Up to now, we have implemented a recursive descent parser with our library. But there is a problem that each time the parser fails, it will backtrack from the beginning and re-parse with another alternative. This can significantly slow down the parsing efficiency. To solve it, we have explored packrat parsing technique and introduced it in the next section.
 
