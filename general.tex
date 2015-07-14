@@ -268,7 +268,7 @@ let rule (termp: Parser[Char, CharList]) (nontp: Parser[Char, CharList]): Parser
 let bnf (nontp: Parser[Char, CharList]) (termp: Parser[Char, CharList]): Parser[Char, Gram] =
     many[Char, (Symbol, Rhs)] (rule termp nontp);
 \end{lstlisting}
-Now given a BNF string, we are potentially available to build our own parse tree with parser \textbf{bnf}. But before that, we need to define a new parse tree for generic application. This data type is called \textbf{GramTree}, a multi-branching tree.
+Now given a BNF string, we are potentially available to build our own parse tree with parser \textbf{bnf}. But it is a good idea to define a new parse tree for generic application. This data type is called \textbf{GramTree}, a multi-branching tree.
 \begin{lstlisting}
 data GramTree = Node Symbol (PolyList[GramTree]);
 \end{lstlisting}
@@ -291,11 +291,11 @@ and parsRhs (gram: Gram) (r: Rhs): Parser[Symbol, PolyList[GramTree]] =
 let parsGram (gram: Gram) (start: Symbol): Parser[Symbol, GramTree] =
  parsSym gram start;
 \end{lstlisting}
-As is shown above, \textbf{parsSym} distinguishes cases for terminal and non-terminal parser functions. If it is a terminal one, \textbf{parsSym} will generate a parser that only recognizes the terminal symbol and then appends a \textbf{Node} onto it.
+As is shown above, \textbf{parsSym} distinguishes cases for terminal and non-terminal parser functions. If it is a terminal one, \textbf{parsSym} will generate a parser that only recognizes the terminal symbol and then appends a \textbf{Node} onto it. As for a non-terminal symbol, it searches in the environment and invokes \textbf{parsRhs} to generate parsers for each alternative in the right hand side of the production rule. Then a \textbf{choice} is made among them and then \textbf{parsAlt} is invoked to parse an individual symbol in the alternative and combines them via a \textbf{sequence} function. With this function, one can build a parser for languages whose grammar observe BNF.
 
 Up to now, we have implemented recursive descent parsers with our library. But there is a problem that each time the parser fails, it will backtrack from the beginning and re-parse with another alternative. This can significantly slow down the parsing efficiency. To solve it, we have explored packrat parsing technique and introduced it in the next section.
 
 \section{Packrat Parsing}
-Considering parsing an arithmetic expression simply like '9'.
+Considering parsing an arithmetic expression simply like '9'. If we define a 
 
 \section{Discussion}
