@@ -2,7 +2,7 @@
 
 \section{General Parser}
 
-\section{Arithmetic Expression}
+\subsection{Arithmetic Expression}
 This section demonstrates an arithmetic expression and its generalized version to provide a glimpse of using the library.
 
 An arithmetic expression can be constructed by an integer (we do not consider any floating numbers here), a variable, a function call and several operators with predefined priorities. This data structure can be described as follows.
@@ -15,7 +15,7 @@ data Expr = Con Int
           |   Mul Expr Expr
           |   Div Expr Expr;
 \end{lstlisting}
-This grammar can be split into two components. The first one is \texttt{factor} which contains a constant, a variable, a function call or an expression and is separated by '*' or '/'.  The second one is \texttt{term} which contains \textbf{factors} and is separated by '+' or '-'.
+This grammar can be split into two components. The first one is \texttt{factor} which contains a constant, a variable, a function call or an expression and is separated by '*' or '/'.  The second one is \texttt{term} which contains \texttt{factors} and is separated by '+' or '-'.
 To parse this grammar, we will define three combinators by combining the existing combinators in our library. The first combinator is called \texttt{fact} which designed to parse a factor. The second combinator is called \texttt{term} that is to parse a term. The third combinator is \texttt{expr} that parses the expression as a whole. These three parsers are shown as below.
 \begin{lstlisting}
 let rec fact: Parser[Char, Expr] =
@@ -164,7 +164,7 @@ let sum: Parser[Any] = product "+" sum | product
 let product: Parser[Any] = primary "*" product | primary
 let primary: Parser[Any] = "(" expr ")" | floatingPointNumber
 \end{lstlisting}
-Then the number '9' will be parsed firstly as a floating point number 9 but fails on \texttt{product "+" sum} and then be parsed again through \texttt{product} to \textbf{floatingPointNumber} again although it has already successfully parsed as 9. This problem will occur every time it fails to parse an alternative. To avoid it, we can cache a successfully parsed intermediate result somewhere and if this result is used again, it can be read from the cache directly instead of parsing it again. This is the basic idea of \texttt{Packrat Parsing}.
+Then the number '9' will be parsed firstly as a floating point number 9 but fails on \texttt{product "+" sum} and then be parsed again through \texttt{product} to \texttt{floatingPointNumber} again although it has already successfully parsed as 9. This problem will occur every time it fails to parse an alternative. To avoid it, we can cache a successfully parsed intermediate result somewhere and if this result is used again, it can be read from the cache directly instead of parsing it again. This is the basic idea of \texttt{Packrat Parsing}.
 
 To solve this problem above, we need an elegantly designed data structure called \texttt{Result} and a data type called \texttt{Derivs} as below.
 \begin{lstlisting}
@@ -207,6 +207,7 @@ and chr (cs : CharList) (d : Derivs) : Result[Char] =
         Cons x xs -> Parsed[Char] x (parse xs)
     |   Nil -> NoParse[Char];
 \end{lstlisting}
+
 Although we obtain better efficiency, packrat parsing also has its disadvantages, like additional storage requirements. We will leave these to the next section together with a general discussion of our recursive descent parsing library which has been introduced in the previous sections.
 
 \section{Monadic Parser}
