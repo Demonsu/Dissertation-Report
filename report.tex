@@ -23,20 +23,6 @@ left=25mm,top=25mm,bottom=25mm]{geometry}
 \usepackage{amsmath}
 \usepackage{epigraph}
 
-
-\renewenvironment{abstract}
-{
-  \thispagestyle{empty}
-  \null
-  \begin{center}
-   \vspace{2.4cm}
-    \setlength{\parskip}{0pt}
-    \bigskip
-    {\huge{\textit{Abstract}} \par}
-    \bigskip
-  \end{center}
-}
-
 \newcommand\acknowledgements[1]{
 \thispagestyle{plain}
 \null\vfil
@@ -66,13 +52,29 @@ left=25mm,top=25mm,bottom=25mm]{geometry}
 
 \title{Efficient Parser and Pretty Printer Combinators in F2J}
 \author{Yuteng Zhong, Yi Li, Fan Xia}
+\makeatletter
+\renewenvironment{abstract}
+{
+  \thispagestyle{empty}
+  \null
+  \begin{center}
+  \setlength{\parskip}{0pt}
+    {\normalsize \@title \par}
+    \bigskip
+   \vspace{2.4cm}
+    \setlength{\parskip}{0pt}
+    \bigskip
+    {\huge{\textit{Abstract}} \par}
+    \bigskip
+  \end{center}
+}
 
 \begin{document}
 
 \pagestyle{empty}
 
 % \maketitle
-\makeatletter
+
 \begin{titlepage}
     \begin{center}
         % \vspace*{1cm}
@@ -136,7 +138,6 @@ left=25mm,top=25mm,bottom=25mm]{geometry}
 
 \include{introduction}
 \include{analysis}
-\include{principles}
 \include{general}
 \include{monadic}
 \include{pretty_printer}
