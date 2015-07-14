@@ -91,17 +91,17 @@ and
 showBracket (tree: List[Tree]): Doc=
     case tree of
             Nil             -> nil
-            |	Cons x xs   -> (text "[") <> (nest 2 ((line) <> (showTrees (x +>[Tree] xs))))
+       |	Cons x xs       -> (text "[") <> (nest 2 ((line) <> (showTrees (x +>[Tree] xs))))
                                <> (line) <> (text "]")
 and
 showTrees (tree: List[Tree]): Doc=
     case tree of
             Nil             -> nil
-            |    Cons x xs  ->
+       |    Cons x xs       ->
     {
     case xs of
             Nil             -> (showTree x)
-            |    Cons y ys  -> (showTree x) <> (text ",") <> (line) <> (showTrees (y +>[Tree] ys))
+       |    Cons y ys       -> (showTree x) <> (text ",") <> (line) <> (showTrees (y +>[Tree] ys))
     }
 ;
 \end{lstlisting}
@@ -264,9 +264,9 @@ flatten (nest i x)      = flatten x
 
 Next, how to choose the best layout among the set? Following the method in Hughes' paper\cite{hughes1995design} which specify an ordering relation between lines, it can be done by specifying an ordering relation between documents. Given two lines a,b (a<b) and the available width w.
 \begin{lstlisting}
-If (b<w)            then b
-If (a<w) & (b>w)    then a
-If (a>w)            then a
+if (b<w)            then b
+if (a<w) & (b>w)    then a
+if (a>w)            then a
 \end{lstlisting}
 
 And in practice, it's done by a function best, which kills all the unions in a document. Additionally, it requires another two parameters: one is the line width w, and the second is spaces k which already occupied on the current line.
@@ -361,7 +361,7 @@ data Doc =  NIL
 
 -- for docpair list, seperating from lazy PList outside
 data DList[A] = DNil
-              | Consd A (DList[A])
+              | DCons A (DList[A])
 ;
 \end{lstlisting}
 And the function \textbf{<>} and \textbf{nest} will then be quite simple:
@@ -388,15 +388,15 @@ Finally, let's take a look at \textbf{best}
 let rec be (w: Int) (k: Int) (docs: DList[Pair]): PDoc =
     case docs of
             DNil                    -> NI
-        |   Consd x xs              ->
+        |   DCons x xs              ->
             {
                 case x._2 of
                     NIL             -> be w k xs
-                |   CONCAT d1 d2    -> be w k (Consd[Pair] (x._1, d1) (Consd[Pair] (x._1, d2) xs))
-                |   NEST j d        -> be w k (Consd[Pair] (j + x._1, d)  xs)
+                |   CONCAT d1 d2    -> be w k (DCons[Pair] (x._1, d1) (DCons[Pair] (x._1, d2) xs))
+                |   NEST j d        -> be w k (DCons[Pair] (j + x._1, d)  xs)
                 |   TEXT s          -> TE s (be w k xs)
                 |   LINE            -> LI x._1 (be w k xs)
-                |   UNION d1 d2     -> better w k (be w k (Consd[Pair] (x._1, d1) xs)) (be w k (Consd[Pair] (x._1, d2) xs))
+                |   UNION d1 d2     -> better w k (be w k (DCons[Pair] (x._1, d1) xs)) (be w k (DCons[Pair] (x._1, d2) xs))
 
             }
 
@@ -405,11 +405,11 @@ let rec be (w: Int) (k: Int) (docs: DList[Pair]): PDoc =
 
 let best (w: Int) (k: Int) (d: Doc): PDoc =
 
-    be w k (Consd[Pair] (0, d) (DNil[Pair]))
+    be w k (DCons[Pair] (0, d) (DNil[Pair]))
 ;
 \end{lstlisting}
 
-The improvement of efficiency should not stay in theory, several experiments are more persuasive. Considering some features of \textit{F2J}, it will always compile before run. And it takes seconds for compilation, which brings too much deviation for analysis. So we need hack a bit into the language. As the language is hosted by JVM, we can just compile the F2J into java classes, then use "JAVA" command to run the object code. Although the loading time of JVM still causes some deviation, at least they compete on a level playing field. Take a look at the test code:
+The improvement of efficiency should not stay in theory, several experiments are more persuasive. Considering some features of F2J, it will always compile before run. And it takes seconds for compilation, which brings too much deviation for analysis. So we need hack a bit into the language. As the language is hosted by JVM, we can just compile the F2J into java classes, then use "JAVA" command to run the object code. Although the loading time of JVM still causes some deviation, at least they compete on a level playing field. Take a look at the test code:
 \begin{lstlisting}
 let rec looptext (x: Int) : Doc =
     if x > 0 then
@@ -420,17 +420,17 @@ let rec looptext (x: Int) : Doc =
 pretty 30 (looptext 200)
 \end{lstlisting}
 
-The test code will generate as many nested texts as you want. However, as \textit{F2J} is a language for academic use, the max count we can hit is 500. Otherwise, either the compiler or the runtime will crash in ways you can't imagine. I use Linux command "time" for evaluating. Raw data is collected in Figure \ref{fig:efficiency comparation}:
+The test code will generate as many nested texts as you want. However, as F2J is a language for academic use, the max count we can hit is 500. Otherwise, either the compiler or the runtime will crash in ways you can't imagine. I use Linux command "time" for evaluating. Raw data is collected in Figure \ref{fig:efficiency comparation}:
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.8\textwidth]{imgs/raw_data}
+    \includegraphics[width=0.7\textwidth]{imgs/raw_data}
     \caption{Raw Data}
     \label{fig:efficiency comparation}
 \end{figure}
 And I draw the raw data into a line chart(Figure \ref{fig:efficiency line chart}), the red one represents the library with efficiency improvement. The x-axis shows how many nested concatenations there are, count in hundreds. And the y-axis shows how much time it takes, count in seconds.
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.8\textwidth]{imgs/compare}
+    \includegraphics[width=0.7\textwidth]{imgs/compare}
     \caption{Line Chart}
     \label{fig:efficiency line chart}
 \end{figure}
@@ -441,11 +441,11 @@ And I draw the raw data into a line chart(Figure \ref{fig:efficiency line chart}
 All the case studies in \textbf{Pretty Printer} share the same ADT definition of the case studies in Section\ref{section:mparser} for further integration.
 
 \subsection{Tree Printer}
-
-\subsubsection{Implementation}
 "There is no poem as lovely as a tree" -- Joyce Kilmer
+\subsubsection{Implementation}
 
-So the first case study I did for all the pretty printer library is tree. And it's defined as:
+
+The first case study I did for all my pretty printer libraries is tree. And it's defined as:
 
 \begin{lstlisting}
 data BTree = Node String PList[BTree];
@@ -454,7 +454,8 @@ data BTree = Node String PList[BTree];
 As discussed in Section\ref{section:printer}. My library provides several basic combinators:
 \begin{itemize}
 \item text:    for printing string
-\item nest:    for indedntation
+\item line:    for line break
+\item nest:    for indentation
 \item group:   for line breaks compress
 \item <>:      for document concatenation
 \end{itemize}
@@ -532,26 +533,338 @@ aaa[ bbb[ ee, ff ], cc, dd ]
 \subsection{Simple Arithmetic Expression Printer}
 
 \subsubsection{Implementation}
+The ADT of a arithmetic expression is as followed. 
+\begin{lstlisting}
+data ArithExpr = Add ArithExpr ArithExpr
+            |    Sub ArithExpr ArithExpr
+            |    Mul ArithExpr ArithExpr
+            |    Div ArithExpr ArithExpr
+            |    Integer Int
+;
+\end{lstlisting}
+
+It looks quite straight forward. However, it misses a piece of important information in the definition, the parentheses. So the printer needs to add them automatically by analysing the context. At first glance, this is an interesting problem and there is no good solution without fully "if" "else". Since you already know something about both F2J and our library. We leave the solution in the following source code for you to further understand our library.
+\begin{lstlisting}
+let rec braketExpr (expr: ArithExpr): Doc =
+
+    (text "(") <> (showArithExpr expr) <> (text ")")
+
+and
+isAddSub (expr: ArithExpr): Doc =
+
+    case expr of
+            Add _ _     ->  braketExpr expr
+        |   Sub _ _     ->  braketExpr expr
+        |   _           ->  showArithExpr expr
+
+and
+showArithExpr (expr: ArithExpr): Doc =
+
+    case expr of
+            Add e1 e2       -> (showArithExpr e1) <> (text " + ") <> (showArithExpr e2)
+        |   Sub e1 e2       -> (showArithExpr e1) <> (text " - ") <> (showArithExpr e2)
+        |   Mul e1 e2       -> (isAddSub e1)      <> (text " * ") <> (isAddSub e2)
+        |   Div e1 e2       -> (isAddSub e1)      <> (text " / ") <> (isAddSub e2)
+        |   Integer x       -> text x.toString()
+;
+\end{lstlisting}
 
 \subsubsection{Test}
+Let's just try a long test case to see whether the printer outputs the correct parentheses.
+\begin{lstlisting}
+let expr= Mul (Add (Sub (Integer 1) (Integer 2)) (Div (Integer 3) (Integer 4)))
+          (Sub (Mul (Add (Integer 5) (Integer 6)) (Integer 7)) (Integer 8))
+;
+\end{lstlisting}
+
+Result:
+\begin{lstlisting}
+(1 - 2 + 3 / 4) * ((5 + 6) * 7 - 8)
+\end{lstlisting}
 
 \subsection{XML Printer}
 
 \subsubsection{Implementation}
+The ADT of a XML document is as followed.
+\begin{lstlisting}
+data XMLNode = XMLText      String
+             | XMLAttr      String String
+             | XMLElement   String PList[XMLNode] PList[XMLNode]
+             | XMLCData     String
+             | XMLComment   String
+             | XMLProcInst  String PList[XMLNode]
+;
+\end{lstlisting}
+Then the pretty printer of XML can be easily wrote:
+\begin{lstlisting}
+let quoted (s: String): String=
+    "\"".concat(s.concat("\""))
+;
+let rec showXML (xml: XMLNode): Doc=
+    case xml of
+        XMLText s        -> text s
+    |   XMLCData s       -> text "<![CDATA[" <> text s <> text "]]>"
+    |   XMLComment s     -> text "<--" <> text s <> text "-->"
+    |   XMLProcInst s x  -> text "<?" <> text s <>showATTs x <> text "?>"
+    |   XMLAttr x y      -> text " " <> text x <> text "=" <> text (quoted y)
+    |   XMLElement s x y -> text "<" <> text s <> showATTs x <> text ">" <>
+                             (nest 2 (line <> showXMLs y)) <>
+                             line <> text "</" <> text s <> text ">"
+and
+showATTs (xmls: PList[XMLNode]): Doc=
+    case xmls of
+        Nil              -> NIL
+    |   Cons x xs        -> showXML x <> showXMLs xs
+and
+showXMLs (xmls: PList[XMLNode]): Doc=
+    case xmls of
+        Nil              -> NIL
+    |   Cons x xs        ->
+    {
+        case xs of
+            Nil          -> showXML x
+        |   Cons y ys    -> showXML x <> line <> showXMLs (y +> ys)
+    }
+;
+\end{lstlisting}
 
 \subsubsection{Test}
+Again, we use a complicate case to test it:
+\begin{lstlisting}
+let xml=
+Cons[XMLNode]
+(XMLProcInst "xml"
+ (
+    Cons[XMLNode] (XMLAttr "version" "1.0")
+    (Cons[XMLNode] (XMLAttr "encoding" "UTF-8") (Nil[XMLNode]))
+ )
+)
+(Cons[XMLNode]
+(   XMLElement "p"
+    (Cons[XMLNode] (XMLAttr "color" "red") (Cons[XMLNode]
+        (XMLAttr "name" "xiafan") (Nil[XMLNode])))
+    (Cons[XMLNode] (XMLElement "h1" (Cons[XMLNode]
+        (XMLAttr "defalt" "true") (Nil[XMLNode]))
+    (Cons[XMLNode] (XMLText "Small Step")
+        (Cons[XMLNode] (XMLCData "<function> text </function>")
+    (Nil[XMLNode])))) (Cons[XMLNode] (XMLComment "this should be ignored")
+        (Nil[XMLNode])))
+)
+(
+    Nil[XMLNode]
+))
+;
+\end{lstlisting}
+
+We get the output:
+\begin{lstlisting}
+<?xml version="1.0" encoding="UTF-8"?>
+<p color="red" name="xiafan">
+  <h1 defalt="true">
+    Small Step
+    <![CDATA[<function> text </function>]]>
+  </h1>
+  <--this should be ignored-->
+</p>
+\end{lstlisting}
+
 
 \subsection{Feather Weight Java Printer}
 
 \subsubsection{Implementation}
+The ADT of a Feather Weight Java document is as followed.
+\begin{lstlisting}
+
+\end{lstlisting}
+Then the pretty printer of Feather Weight Java can be easily wrote(only main printer is showed):
+\begin{lstlisting}
+showFJClass (class : FJClass) : Doc =
+    case class of
+      FJClass t mt bodys  ->
+      {
+        case mt of
+            Nothing -> group (text "Class " <> showFJType t <> text " " <>
+                       line <> text "{" <>
+                       nest 2 (line <> showFJClassBodyContents bodys) <>
+                       line <> text "}")
+
+        |   Just x  -> group (text "Class " <> showFJType t <> text "
+                       extends " <> showFJType x <> text " " <>
+                       line <> text "{" <>
+                       nest 2 (line <> showFJClassBodyContents bodys) <>
+                       line <> text "}")
+      }
+and
+showFJClasses (classes : PList[FJClass]) : Doc =
+    case classes of
+          Nil         -> NIL
+
+      |   Cons x xs   -> showFJClass x <> line <>
+                         showFJClasses (invoke[PList[FJClass]] xs)
+;
+\end{lstlisting}
 
 \subsubsection{Test}
+For Feather Weight Java, we use unit tests, since the language is bit complex.
+\begin{lstlisting}
+let tests=  (testFJClass                    +>[TestFn]
+            (testFJMethod2                  +>[TestFn]
+            (testFJMethod                   +>[TestFn]
+            (testFJStmt                     +>[TestFn]
+            (testFJFJVariableDef2           +>[TestFn]
+            (testFJFJVariableDef            +>[TestFn]
+            (testFJExpr3                    +>[TestFn]
+            (testFJExpr2                    +>[TestFn]
+            (testFJExpr                     +>[TestFn]
+            (Nil[TestFn]))))))))))
+;
+runTests tests
+\end{lstlisting}
+
+We get the output:
+\begin{lstlisting}
+testing FJExpr :
+a
+...check it yourself
+testing FJExpr :
+a.b
+...check it yourself
+testing FJExpr :
+a.f(a, a.b)
+...check it yourself
+testing FJVariableDef :
+int a = 10, b = 20
+...check it yourself
+testing FJVariableDef :
+int a, b = 20
+...check it yourself
+testing FJStmt :
+{
+  int a = 10, b = 20;
+  a.b;
+  return a.f(a, a.b);
+}
+...check it yourself
+testing FJMethod :
+A(int a, int b = 1)  {  }
+...check it yourself
+testing FJMethod :
+string B(int a, int b = 1)
+{
+  int a = 10, b = 20;
+  return a.f(a, a.b);
+}
+...check it yourself
+testing FJClass :
+Class A extends B
+{
+  Class C
+  {
+    int a = 10, b = 20;
+    A(int a, int b = 1)
+    {
+
+    }
+    string B(int a, int b = 1)
+    {
+      int a = 10, b = 20;
+      return a.f(a, a.b);
+    }
+  }
+  int a = 10, b = 20;
+  A(int a, int b = 1)
+  {
+
+  }
+  string B(int a, int b = 1)
+  {
+    int a = 10, b = 20;
+    return a.f(a, a.b);
+  }
+}
+\end{lstlisting}
 
 \subsection{A Subset of F2J Printer}
 
+
 \subsubsection{Implementation}
+The ADT of a F2J document is quite large and has been detailed analysed in the case studies of parser. So we don't list any thing here.
+
+Then the pretty printer of XML can be easily wrote:
+\begin{lstlisting}
+let quoted (s: String): String=
+    "\"".concat(s.concat("\""))
+;
+let rec showXML (xml: XMLNode): Doc=
+    case xml of
+        XMLText s        -> text s
+    |   XMLCData s       -> text "<![CDATA[" <> text s <> text "]]>"
+    |   XMLComment s     -> text "<--" <> text s <> text "-->"
+    |   XMLProcInst s x  -> text "<?" <> text s <>showATTs x <> text "?>"
+    |   XMLAttr x y      -> text " " <> text x <> text "=" <> text (quoted y)
+    |   XMLElement s x y -> text "<" <> text s <> showATTs x <> text ">" <>
+                             (nest 2 (line <> showXMLs y)) <>
+                             line <> text "</" <> text s <> text ">"
+and
+showATTs (xmls: PList[XMLNode]): Doc=
+    case xmls of
+        Nil              -> NIL
+    |   Cons x xs        -> showXML x <> showXMLs xs
+and
+showXMLs (xmls: PList[XMLNode]): Doc=
+    case xmls of
+        Nil              -> NIL
+    |   Cons x xs        ->
+    {
+        case xs of
+            Nil          -> showXML x
+        |   Cons y ys    -> showXML x <> line <> showXMLs (y +> ys)
+    }
+;
+\end{lstlisting}
 
 \subsubsection{Test}
+Again, we use a complicate case to test it:
+\begin{lstlisting}
+let xml=
+Cons[XMLNode]
+(XMLProcInst "xml"
+ (
+    Cons[XMLNode] (XMLAttr "version" "1.0")
+    (Cons[XMLNode] (XMLAttr "encoding" "UTF-8") (Nil[XMLNode]))
+ )
+)
+(Cons[XMLNode]
+(   XMLElement "p"
+    (Cons[XMLNode] (XMLAttr "color" "red") (Cons[XMLNode]
+        (XMLAttr "name" "xiafan") (Nil[XMLNode])))
+    (Cons[XMLNode] (XMLElement "h1" (Cons[XMLNode]
+        (XMLAttr "defalt" "true") (Nil[XMLNode]))
+    (Cons[XMLNode] (XMLText "Small Step")
+        (Cons[XMLNode] (XMLCData "<function> text </function>")
+    (Nil[XMLNode])))) (Cons[XMLNode] (XMLComment "this should be ignored")
+        (Nil[XMLNode])))
+)
+(
+    Nil[XMLNode]
+))
+;
+\end{lstlisting}
 
+We get the output:
+\begin{lstlisting}
+<?xml version="1.0" encoding="UTF-8"?>
+<p color="red" name="xiafan">
+  <h1 defalt="true">
+    Small Step
+    <![CDATA[<function> text </function>]]>
+  </h1>
+  <--this should be ignored-->
+</p>
+\end{lstlisting}
+
+
+
+\subsection{Discussion}
 
 
