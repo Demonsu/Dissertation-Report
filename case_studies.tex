@@ -459,11 +459,11 @@ This program will output
 
 So the value of \texttt{1+1*(2+3)} is 6.
 
-\subsection{XML Parser}
+\subsection{XML Parser} \label{section:xml_parser}
 
 \subsubsection{Parser Implementation}
 
-After trying to build an arithmetic expression parser, we began to think about a little bit more complicated parser. We finally chose the XML as my next case study language, because XML is simple, easy to parse and has recursive structure. But we will not build a practical XML parser, just support the core grammar of XML.
+After trying to build an arithmetic expression parser, we began to think about a little bit more complicated parser. We finally chose the XML as our next case study language, because XML is simple, easy to parse and has recursive structure. But we will not build a practical XML parser, just support the core grammar of XML.
 
 First of all, we could define an ADT for XML syntax tree
 
@@ -705,7 +705,7 @@ The parse result is \texttt{[XMLElement a [] []]}, as for the rest test cases' o
     "" @ ""<default>" (1:44)")]
 \end{lstlisting}
 
-\subsection{Feather Weight Java Parser}
+\subsection{Feather Weight Java Parser} \label{section:fj_parser}
 
 \subsubsection{Parser Implementation}
 
@@ -845,7 +845,7 @@ Put the test string in \texttt{"..."} and run the program, we will see the outpu
 
 The rest of results are omitted beause we only need to focus on the first result. We could easily see that the result is exactly the same as the input program.
 
-\subsection{A Subset of F2J Parser}
+\subsection{A Subset of F2J Parser} \label{section:f2j_parser}
 
 We build this parser library for bootstrapping the F2J compiler, so it is a good start to write a parser for F2J. But F2J's grammar is complicated, such as Java interpolation, infix operators and string interpolation. So we chose to implement a subset of F2J's grammar, including
 
@@ -1053,13 +1053,13 @@ All the case studies in \textbf{Pretty Printer} share the same ADT definition of
 "There is no poem as lovely as a tree" -- Joyce Kilmer
 \subsubsection{Implementation}
 
-The first case study I did for all my pretty printer libraries is tree. And it's defined as:
+The first case study we did for all our pretty printer libraries is tree. And it's defined as:
 
 \begin{lstlisting}
 data BTree = Node String PList[BTree];
 \end{lstlisting}
 
-As discussed in Section\ref{section:printer}. My library provides several basic combinators:
+As discussed in Section\ref{section:printer}. Our library provides several basic combinators:
 
 \begin{itemize}
 \item text:    for printing string
@@ -1069,7 +1069,7 @@ As discussed in Section\ref{section:printer}. My library provides several basic 
 \item \texttt{<>}:      for document concatenation
 \end{itemize}
 
-I use \texttt{"[]"} to show the hieratical structure between tree nodes, and assuming that nodes on the same level could be printed into one line when the line width is long enough.
+We use \texttt{"[]"} to show the hieratical structure between tree nodes, and assuming that nodes on the same level could be printed into one line when the line width is long enough.
 \begin{lstlisting}
 let bracket (l: String) (d: Doc) (r: String): Doc =
     group (text l <> (nest 2 (line <> d)) <> line <> text r)
@@ -1109,7 +1109,7 @@ let tree2 = Node "aaa"
 ;
 \end{lstlisting}
 
-I test the printer with different line width:
+We test the printer with different line width:
 \begin{lstlisting}
 println "Line Width 10:";
 println (pretty 10 (showTree tree2));
@@ -1121,7 +1121,7 @@ println "Line Width 30:";
 println (pretty 30 (showTree tree2))
 \end{lstlisting}
 
-My printer will have the output:
+Our printer will have the output:
 \begin{lstlisting}
 Line Width 10:
 aaa[
@@ -1145,7 +1145,7 @@ aaa[ bbb[ ee, ff ], cc, dd ]
 \subsection{Simple Arithmetic Expression Printer}
 
 \subsubsection{Implementation}
-The ADT of a arithmetic expression is as followed.
+The ADT of a arithmetic expression is defined as Section\ref{section:simple_arith_expr_parser}.
 \begin{lstlisting}
 data ArithExpr = Add ArithExpr ArithExpr
             |    Sub ArithExpr ArithExpr
@@ -1200,7 +1200,7 @@ Result:
 \subsection{XML Printer}
 
 \subsubsection{Implementation}
-The ADT of a XML document is as followed.
+The ADT of a XML document is defined as Section\ref{section:xml_parser}.
 
 \begin{lstlisting}
 data XMLNode = XMLText      String
@@ -1292,11 +1292,8 @@ We get the output:
 \subsection{Feather Weight Java Printer}
 
 \subsubsection{Implementation}
-The ADT of a Feather Weight Java document is as followed.
+The ADT of a Feather Weight Java document is defined as Section\ref{section:fj_parser}.
 
-\begin{lstlisting}
-
-\end{lstlisting}
 
 Then the pretty printer of Feather Weight Java can be easily wrote(only main printer is showed):
 
@@ -1329,7 +1326,7 @@ showFJClasses (classes : PList[FJClass]) : Doc =
 
 \subsubsection{Test}
 
-For Feather Weight Java, we use unit tests, since the language is bit complex.
+For Feather Weight Java, we use unit tests, since the language is a bit complex.
 
 \begin{lstlisting}
 let tests=  (testFJClass                    +>[TestFn]
@@ -1350,36 +1347,36 @@ We get the output:
 \begin{lstlisting}
 testing FJExpr :
 a
-...check it yourself
+
 testing FJExpr :
 a.b
-...check it yourself
+
 testing FJExpr :
 a.f(a, a.b)
-...check it yourself
+
 testing FJVariableDef :
 int a = 10, b = 20
-...check it yourself
+
 testing FJVariableDef :
 int a, b = 20
-...check it yourself
+
 testing FJStmt :
 {
   int a = 10, b = 20;
   a.b;
   return a.f(a, a.b);
 }
-...check it yourself
+
 testing FJMethod :
 A(int a, int b = 1)  {  }
-...check it yourself
+
 testing FJMethod :
 string B(int a, int b = 1)
 {
   int a = 10, b = 20;
   return a.f(a, a.b);
 }
-...check it yourself
+
 testing FJClass :
 Class A extends B
 {
@@ -1413,80 +1410,156 @@ Class A extends B
 
 
 \subsubsection{Implementation}
-The ADT of a F2J document is quite large and has been detailed analysed in the case studies of parser. So we don't list any thing here.
+The ADT of a F2J document is defined as Section\ref{section:f2j_parser}.
 
-Then the pretty printer of XML can be easily wrote:
+Then the main pretty printer of F2J can be wrote:
 \begin{lstlisting}
-let quoted (s: String): String=
-    "\"".concat(s.concat("\""))
-;
-let rec showXML (xml: XMLNode): Doc=
-    case xml of
-        XMLText s        -> text s
-    |   XMLCData s       -> text "<![CDATA[" <> text s <> text "]]>"
-    |   XMLComment s     -> text "<--" <> text s <> text "-->"
-    |   XMLProcInst s x  -> text "<?" <> text s <>showATTs x <> text "?>"
-    |   XMLAttr x y      -> text " " <> text x <> text "=" <> text (quoted y)
-    |   XMLElement s x y -> text "<" <> text s <> showATTs x <> text ">" <>
-                             (nest 2 (line <> showXMLs y)) <>
-                             line <> text "</" <> text s <> text ">"
-and
-showATTs (xmls: PList[XMLNode]): Doc=
-    case xmls of
-        Nil              -> NIL
-    |   Cons x xs        -> showXML x <> showXMLs xs
-and
-showXMLs (xmls: PList[XMLNode]): Doc=
-    case xmls of
-        Nil              -> NIL
-    |   Cons x xs        ->
-    {
-        case xs of
-            Nil          -> showXML x
-        |   Cons y ys    -> showXML x <> line <> showXMLs (y +> ys)
-    }
+showF2JExpr (expr: F2JExpr): Doc=
+case expr of
+        F2JApplication f2jexpr apparm
+    -> text "(" <> showF2JExpr f2jexpr <> text " " <>
+    showF2JApplicationParam apparm <> text ")"
+    |   F2JLet bindingbodys f2jexpr
+    -> text "let " <> showF2JBindingBodys bindingbodys <>
+    line <> text ";" <> line <> showF2JExpr f2jexpr
+    |   F2JLetRec bindingbodys f2jexpr
+    -> text "let rec " <> showF2JBindingBodys bindingbodys <>
+    line <> text ";" <> line <> showF2JExpr f2jexpr
+    |   F2JLambda bindingparams f2jexpr
+    -> text "\\" <> showF2JBindingParams bindingparams <> text " -> " <>
+    showF2JExpr f2jexpr
+    |   F2JCase f2jexpr casealternatives
+    -> text "case " <> showF2JExpr f2jexpr <> text " of" <>
+    line <> (showF2JCaseAlternatives casealternatives
+    (lengOfF2JCaseAlternatives casealternatives))
+    |   F2JADT f2jadtbodys f2jexpr
+    -> text "data " <> (showF2JADTBodys f2jadtbodys 7) <>
+    line <> text ";" <> line <> showF2JExpr f2jexpr
+    |   F2JRecADT f2jadtbodys f2jexpr
+    -> text "data rec " <> (showF2JADTBodys f2jadtbodys 11) <>
+    line <> text ";" <> line <> showF2JExpr f2jexpr
+    |   F2JTypeAlias type1 type2 f2jexpr
+    -> text "type " <> showF2JType type1 <> text "= " <>
+    showF2JType type2 <> showF2JExpr f2jexpr
+    |   F2JPair exprs
+    -> showF2JExprs exprs
+    |   F2JIntLiteral s
+    -> text s
+    |   F2JStringLiteral s
+    -> text s
+    |   F2JVariable v
+    -> text v
+    |   F2JBlock exprs
+    -> text "{" <> line <> showF2JExprs exprs <> line <> text "}"
+    |   F2JRecord recorditems
+    -> showF2JRecordItems recorditems
 ;
 \end{lstlisting}
 
 \subsubsection{Test}
-Again, we use a complicate case to test it:
+
+For F2J, we use unit tests, since the language is much more complex.
 
 \begin{lstlisting}
-let xml=
-Cons[XMLNode]
-(XMLProcInst "xml"
- (
-    Cons[XMLNode] (XMLAttr "version" "1.0")
-    (Cons[XMLNode] (XMLAttr "encoding" "UTF-8") (Nil[XMLNode]))
- )
-)
-(Cons[XMLNode]
-(   XMLElement "p"
-    (Cons[XMLNode] (XMLAttr "color" "red") (Cons[XMLNode]
-        (XMLAttr "name" "xiafan") (Nil[XMLNode])))
-    (Cons[XMLNode] (XMLElement "h1" (Cons[XMLNode]
-        (XMLAttr "defalt" "true") (Nil[XMLNode]))
-    (Cons[XMLNode] (XMLText "Small Step")
-        (Cons[XMLNode] (XMLCData "<function> text </function>")
-    (Nil[XMLNode])))) (Cons[XMLNode] (XMLComment "this should be ignored")
-        (Nil[XMLNode])))
-)
-(
-    Nil[XMLNode]
-))
+let tests=  (testF2JExprFull            +>[TestFn]
+            (testF2JExprF2JCase         +>[TestFn]
+            (testF2JExprF2JRecADT       +>[TestFn]
+            (testF2JExprF2JADT          +>[TestFn]
+            (testF2JLetBindingBodyRec   +>[TestFn]
+            (testF2JLetBindingBody      +>[TestFn]
+            (testMaybe                  +>[TestFn]
+            (testF2JADTBody2            +>[TestFn]
+            (testF2JADTBody1            +>[TestFn]
+            (testF2JBindingParam        +>[TestFn]
+            (testF2JLambda              +>[TestFn]
+            (testF2JType                +>[TestFn]
+            (Nil[TestFn])))))))))))))
 ;
+runTests tests
 \end{lstlisting}
 
 We get the output:
 
 \begin{lstlisting}
-<?xml version="1.0" encoding="UTF-8"?>
-<p color="red" name="xiafan">
-  <h1 defalt="true">
-    Small Step
-    <![CDATA[<function> text </function>]]>
-  </h1>
-  <--this should be ignored-->
-</p>
+testing F2JType :
+(A,B) -> C
+
+testing F2JLambda :
+\(a: (A,B) -> C) (b: (A,B) -> C) (c: (A,B) -> C) -> 1
+
+testing F2JBindingParam :
+(a: (A,B) -> C) (b: (A,B) -> C) (c: (A,B) -> C)
+
+testing F2JADTBody  normal :
+F2JType=    F2JNormalType String PList[F2JType]
+              | F2JPairedType PList[F2JType]
+              | F2JFunctionType F2JType F2JType
+
+testing F2JADTBody  record :
+F2JRecord= {
+    name        : Demonsu,
+    age     : 24,
+    gender      : male
+}
+
+testing Maybe :
+(A,B) -> C
+
+testing F2JLetBindingBody :
+PrintWorld[A,B] (a: (A,B) -> C) (b: (A,B) -> C) (c: (A,B) -> C): F2JType =
+    test
+
+testing F2JLetBindingBody rec :
+PrintWorld[A,B] (a: (A,B) -> C) (b: (A,B) -> C) (c: (A,B) -> C): F2JType =
+    test
+
+testing F2JExpr(F2JADT) :
+data F2JType=   F2JNormalType String PList[F2JType]
+              | F2JPairedType PList[F2JType]
+              | F2JFunctionType F2JType F2JType
+and
+F2JRecord= {
+    name        : Demonsu,
+    age     : 24,
+    gender      : male
+}
+;
+test
+
+testing F2JExpr(F2JRecADT) :
+data rec F2JType=   F2JNormalType String PList[F2JType]
+                  | F2JPairedType PList[F2JType]
+                  | F2JFunctionType F2JType F2JType
+and
+F2JType=    F2JNormalType String PList[F2JType]
+                  | F2JPairedType PList[F2JType]
+                  | F2JFunctionType F2JType F2JType
+;
+test
+
+testing F2JExpr(F2JCase) :
+case x of
+    F2JNormalType s types         ->
+            (text s)
+|   F2JFunctionType type1 type2   ->
+            (<> (showF2JType type1) (showF2JType type2))
+|   F2JPairedType types           ->
+            (showF2JTypes types)
+
+testing F2JExpr(Full) :
+data F2JType=   F2JNormalType String PList[F2JType]
+              | F2JPairedType PList[F2JType]
+              | F2JFunctionType F2JType F2JType
+;
+let showF2JType (x: F2JType): Doc =
+    case x of
+        F2JNormalType s types         ->
+                (text s)
+    |   F2JFunctionType type1 type2   ->
+                (<> (showF2JType type1) (showF2JType type2))
+    |   F2JPairedType types           ->
+                (showF2JTypes types)
+;
+end
 \end{lstlisting}
 

@@ -17,7 +17,7 @@ aaa[
 ]
 \end{lstlisting}
 
-And a pretty printer library's work is to make the implementation of a pretty printer more convenient. So it's about software reuse. Then the nature of my work is to find specific programming idioms during the process of writing a pretty printer. And these programming idioms are also called combinators. For example, when you want to get the tree layout above, just use several combinators provided by my library:
+And a pretty printer library's work is to make the implementation of a pretty printer more convenient. So it's about software reuse. Then the nature of our work is to find specific programming idioms during the process of writing a pretty printer. And these programming idioms are also called combinators. For example, when you want to get the tree layout above, just use several combinators provided by our library:
 
 \begin{lstlisting}
 text "aaa" <> (nest 2 (line <> text "bbb"))
@@ -420,14 +420,14 @@ let rec looptext (x: Int) : Doc =
 pretty 30 (looptext 200)
 \end{lstlisting}
 
-The test code will generate as many nested texts as you want. However, as F2J is a language for academic use, the max count we can hit is 500. Otherwise, either the compiler or the runtime will crash in ways you can't imagine. I use Linux command "time" for evaluating. Raw data is collected in Figure \ref{fig:efficiency comparation}:
+The test code will generate as many nested texts as you want. However, as F2J is a language for academic use, the max count we can hit is 500. Otherwise, either the compiler or the runtime will crash in ways you can't imagine. We use Linux command "time" for evaluating. Raw data is collected in Figure \ref{fig:efficiency comparation}:
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.7\textwidth]{imgs/raw_data}
     \caption{Raw Data}
     \label{fig:efficiency comparation}
 \end{figure}
-And I draw the raw data into a line chart(Figure \ref{fig:efficiency line chart}), the red one represents the library with efficiency improvement. The x-axis shows how many nested concatenations there are, count in hundreds. And the y-axis shows how much time it takes, count in seconds.
+And we draw the raw data into a line chart(Figure \ref{fig:efficiency line chart}), the red one represents the library with efficiency improvement. The x-axis shows how many nested concatenations there are, count in hundreds. And the y-axis shows how much time it takes, count in seconds.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.7\textwidth]{imgs/compare}
