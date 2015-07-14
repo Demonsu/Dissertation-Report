@@ -187,19 +187,34 @@ This grammar can be split into two components. The first one is \textbf{factor} 
 To parse this grammar, we will define three combinators by combining the existing combinators in our library. The first combinator is called \textbf{fact} which designed to parse a factor. The second combinator is called \textbf{term} that is to parse a term. The third combinator is \textbf{expr} that parses the expression as a whole. These three parsers are shown as below.
 \begin{lstlisting}
 let rec fact: Parser[Char, Expr] =
-    (integer <@[Char, Int, Expr] (\(v: Int) -> Con v))
-    <|>[Char, Expr] ((identifier 
-        ~[Char, CharList, (CharList -> Expr)]
-            (option[Char, PolyList[Expr]] (parenthesized[PolyList[Expr]] 
-            (commaList[Expr] expr))
-             <?@[Char, PolyList[Expr], (CharList -> Expr)] (\(cs: CharList) -> Var cs, (flip[CharList, PolyList[Expr], Expr] (\(cs: CharList) -> \(pl: PolyList[Expr]) -> Fun cs pl)))))
-        <@[Char, (CharList, (CharList -> Expr)), Expr] (\(v: (CharList, 
-        (CharList -> Expr))) -> v._2 v._1))
-    <|>[Char, Expr] (parenthesized[Expr] expr)
-and term: Parser[Char, Expr] = chainr[Char, Expr] fact (symbol '*' <@[Char, Char, (Expr -> Expr -> Expr)] (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Mul a b)
-    <|>[Char, (Expr -> Expr -> Expr)] (symbol '/' <@[Char, Char, (Expr -> Expr -> Expr)] (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Div a b)))
-and expr: Parser[Char, Expr] = chainr[Char, Expr] term (symbol '+' <@[Char, Char, (Expr -> Expr -> Expr)] (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Add a b)
-    <|>[Char, (Expr -> Expr -> Expr)] (symbol '-' <@[Char, Char, (Expr -> Expr -> Expr)] (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Min a b)));
+	\(cs: CharList) -> (
+		(integer <@[Char, Int, Expr] (\(v: Int) -> Con v))
+		<|>[Char, Expr] ((identifier 
+			~[Char, CharList, (CharList -> Expr)]
+				(option[Char, PolyList[Expr]] (parenthesized[PolyList[Expr]] (commaList[Expr] expr))
+			 	<?@[Char, PolyList[Expr], (CharList -> Expr)] 
+			 	(\(cs: CharList) -> Var cs, (
+			 			flip[CharList, PolyList[Expr], Expr] 
+			 				(\(cs: CharList) -> \(pl: PolyList[Expr]) -> Fun cs pl)))))
+		<@[Char, (CharList, (CharList -> Expr)), Expr] 
+			(\(v: (CharList, (CharList -> Expr))) -> v._2 v._1))
+	<|>[Char, Expr] (parenthesized[Expr] expr)) cs
+and term: Parser[Char, Expr] = 
+	\(cs: CharList) -> 
+		(chainr[Char, Expr] fact (symbol '*' 
+			<@[Char, Char, (Expr -> Expr -> Expr)] 
+			(\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Mul a b)
+				<|>[Char, (Expr -> Expr -> Expr)] 
+				(symbol '/' <@[Char, Char, (Expr -> Expr -> Expr)] 
+					(\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Div a b)))) cs
+and expr: Parser[Char, Expr] = 
+	\(cs: CharList) -> 
+		(chainr[Char, Expr] term (symbol '+' 
+			<@[Char, Char, (Expr -> Expr -> Expr)] 
+			(\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Add a b)
+				<|>[Char, (Expr -> Expr -> Expr)] 
+				(symbol '-' <@[Char, Char, (Expr -> Expr -> Expr)] 
+					(\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Min a b)))) cs;
 \end{lstlisting}
 Now we can just use \textbf{expr} to parse the arithmetic expressions. However, this combinator only suites for expressions with '+', '-', '*', '/' operations. To generalize it, we can define a parser that can parse any expressions containing any predefined operations with different priorities. This task is relatively easy thanks to the combinators in the library. We firstly define an operation type \textbf{Op} which is a tuple that contains a symbol of operation and its behaviour. Then we define a combinator \textbf{gen} that accepts such operations and a parser, and applies the operation on the parsing result. By using \textbf{gen}, we can change our arithmetic expression parser into the below format with some helper combinators introduced.
 \begin{lstlisting}
@@ -296,6 +311,56 @@ As is shown above, \textbf{parsSym} distinguishes cases for terminal and non-ter
 Up to now, we have implemented recursive descent parsers with our library. But there is a problem that each time the parser fails, it will backtrack from the beginning and re-parse with another alternative. This can significantly slow down the parsing efficiency. To solve it, we have explored packrat parsing technique and introduced it in the next section.
 
 \section{Packrat Parsing}
-Considering parsing an arithmetic expression simply like '9'. If we define a 
+Considering parsing an arithmetic expression simply like '9'. If we define an arithmetic expression's grammar as below.
+\begin{lstlisting}
+let sum: Parser[Any] = product "+" sum | product
+let product: Parser[Any] = primary "*" product | primary
+let primary: Parser[Any] = "(" expr ")" | floatingPointNumber
+\end{lstlisting}
+Then the number '9' will be parsed firstly as a floating point number 9 but fails on \textbf{product "+" sum} and then be parsed again through \textbf{product} to \textbf{floatingPointNumber} again although it has already successfully parsed as 9. This problem will occur every time it fails to parse an alternative. To avoid it, we can cache a successfully parsed intermediate result somewhere and if this result is used again, it can be read from the cache directly instead of parsing it again. This is the basic idea of \textbf{Packrat Parsing}.
+
+To solve this problem above, we need an elegantly designed data structure called \textbf{Result} and a data type called \textbf{Derivs} as below.
+\begin{lstlisting}
+data Result[V] = Parsed V {
+					dvAdditive	: Thunk[Result[Int]],
+					dvMultitive	: Thunk[Result[Int]],
+					dvPrimary	: Thunk[Result[Int]],
+					dvDecimal	: Thunk[Result[Int]],
+					dvChar		: Thunk[Result[Char]]
+				 }
+			   | NoParse;
+
+type Derivs = {
+	dvAdditive	: Thunk[Result[Int]],
+	dvMultitive	: Thunk[Result[Int]],
+	dvPrimary	: Thunk[Result[Int]],
+	dvDecimal	: Thunk[Result[Int]],
+	dvChar		: Thunk[Result[Char]]
+};
+\end{lstlisting}
+Now we can use the \textbf{parse} function as below to parse the arithmetic expressions as above and enjoy the efficiency improvement brought by the cached intermediate results.
+\begin{lstlisting}
+let rec parse (cs: CharList): Derivs = {
+	dvAdditive 	= \(x:Unit) -> add (parse cs),
+	dvMultitive = \(x:Unit) -> mul (parse cs),
+	dvPrimary 	= \(x:Unit) -> pri (parse cs),
+	dvDecimal 	= \(x:Unit) -> dec (parse cs),
+	dvChar 		= \(x:Unit) -> chr cs (parse cs)
+}
+and add (d : Derivs) : Result[Int] =
+	pAdditive d
+and mul (d : Derivs) : Result[Int] =
+	pMultitive d
+and pri (d : Derivs) : Result[Int] =
+	pPrimary d
+and dec (d : Derivs) : Result[Int] =
+	pDecimal d
+and chr (cs : CharList) (d : Derivs) : Result[Char] =
+	case cs of 
+		Cons x xs -> Parsed[Char] x (parse xs)
+	| 	Nil -> NoParse[Char];
+\end{lstlisting}
+Although we obtain better efficiency, packrat parsing also has its disadvantages, like additional storage requirements. We will leave these to the next section together with a general discussion of our recursive descent parsing library which has been introduced in the previous sections.
 
 \section{Discussion}
+Recursive descent down parsing is a dominant parsing technique in the practical parsing engineering realm. Using parser combinators to build one's own parsers is much more programmer friendly and scalable. However, to combine a parser is still not an easy task due to the different type of functions provided in the library. This problem is also the same to a packrat parser. Since one needs to build a packrat parser for a particular language by himself, it is better that these parser combinators in the library share a common type so that they can be combined and extended conveniently. And this problem can be solved by introducing a mathematical concept called \textbf{Monad}. To design a parser library in the monadic way, next chapter will have detail introduction. 
