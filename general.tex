@@ -3,41 +3,52 @@ This chapter mainly focuses on the implementation details of a general parser co
 
 \section{Type of Parser}
 The goal of a parsing task is to analyse a piece of code constructed according to a certain kind of grammar and then transfer it into a parse tree. This parse tree then can be utilized by a compiler to generate machine code. Many approaches can be used to define a basic parser type. For general parsing purposes, we define the parser type in F2J as follow.
+
 \begin{lstlisting}
 type Binding[Symbol, Result] = (PolyList[Symbol], Result);
 
 type Parser[Symbol, Result] =
 	PolyList[Symbol] -> PolyList[Binding[Symbol, Result]];
 \end{lstlisting}
+
 Here PolyList is a self-defined data type as below.
+
 \begin{lstlisting}
 data PolyList[A] = Nil
 	| Cons A (PolyList[A]);
 \end{lstlisting}
+
 Hence, the parser is a function which accepts a series of symbols and returns a series of bindings of such symbols and its matching result. Within the general combinator library, we will use this type all the time.
 
 \section{Primitive Parsers}
 Before starting parsing, we need several primitive parsers as our basis to construct our parsers. First is a parser that always parses a given string and returns a certain result regardless of its input. We call this parser \textbf{succeed}. This parser is defined as below.
+
 \begin{lstlisting}
 let succeed[S, R] (result: R): Parser[S, R] =
 	\(input: PolyList[S]) ->
 	createList[Binding[S, R]] (input, result);
 \end{lstlisting}
+
 A variation of succeed is a parser that parses an empty string, which is called \textbf{epsilon} in grammar theory.
+
 \begin{lstlisting}
 let epsilon[S]: Parser[S, Unit] = succeed[S, Unit] ();
 \end{lstlisting}
+
 Another primitive parser is \textbf{fail} which always fails to recognize any inputs and returns an empty list of results.
+
 \begin{lstlisting}
 let fail[S, R]: Parser[S, R] =
 	\(input: PolyList[S]) -> Nil[Binding[S, R]];
 \end{lstlisting}
+
 We need these trivial parsers to build new parsers later.
 
 \section{Elementary Combinators}
 With the primitive parsers above, we now are able to build a parser for any languages constructed according to certain grammars. But to facilitate parsing, we need more powerful and reusable parsers. To accomplish this, we define some elementary parser combinators as partially parameterized higher-order functions. For notation convenience, we use some symbols to denote these functions.
 
 The first one is a sequential parser. This parser accepts two parsers and applies the first one on the input and then the next one on the rest string. To implement this, we need several helper functions in advance. They are listed as below.
+
 \begin{lstlisting}
 let rec map[A, B] (f: A -> B) (l: PolyList[A]): PolyList[B] =
     case l of
@@ -50,7 +61,9 @@ let bind[S, A, B]
     (map[Binding[S, A], PolyList[Binding[S, B]]]
     (\(v: Binding[S, A]) -> f v._2 v._1) (p input));
 \end{lstlisting}
+
 Function map is used to apply a function onto each element of a PolyList. And function bind binds the result of the first parser onto the second parser and yields a new parser. With these two parsers, now we can define our sequential parser, denoted with \texttt{\textasciitilde}, as follows.
+
 \begin{lstlisting}
 let (~)[S, A, B] (p: Parser[S, A])
     (q: Parser[S, B]): Parser[S, (A, B)] =
@@ -58,35 +71,45 @@ let (~)[S, A, B] (p: Parser[S, A])
 	  bind[S, B, (A, B)] q (\(y: B) ->
 	    succeed[S, (A, B)] (x, y)));
 \end{lstlisting}
+
 The sequential parser accepts two parsers and yields a parser containing a tuple with both two parsing results. Apart from the sequential parser, we also need a choice parser that concatenating two possible parsing results. This parser, denoted with \texttt{<|>} is defined as below.
+
 \begin{lstlisting}
 let (<|>)[S, A] (p1: Parser[S, A]) (p2: Parser[S, A]):
     Parser[S, A] =
 	  \(input: PolyList[S]) ->
 	    (p1 input) ++[Binding[S, A]] (p2 input);
 \end{lstlisting}
+
 Although now we can build a parse tree of our own, but it is still impossible to combine parsers arbitrarily since these parsers yield different results. To solve this, we need some parser transformers that can alter the parser's result and transform it into our desired one.
 
 \section{Parser Transformers}
 In this section, we will define some parser transformers that can transform existing parsers into our expecting ones. The first transformer is called '\texttt{sp}', which drops initial spaces from the input and returns rest string.
+
 \begin{lstlisting}
 let sp[R] (p: Parser[Char, R]): Parser[Char, R] = \(input: CharList) ->
 p (dropBlanks(input));
 \end{lstlisting}
+
 The second one is \texttt{just}, which accepts a parser and guarantees an empty rest string in the result.
+
 \begin{lstlisting}
 let just[S, R] (p: Parser[S, R]): Parser[S, R] =
     \(input: PolyList[S]) -> filter[Binding[S, R]] (\(v: Binding[S, R]) -> isEmpty[S] (v._1)) (p input);
 \end{lstlisting}
+
 The third parser transformer is the most powerful one since it can accept a parser and applies a function onto its parsing result, which can easily transform a parser with certain output type into another type. For convenience, we denote this function as \texttt{<@} and its implementation is listed as below.
+
 \begin{lstlisting}
 let (<@)[S, A, B] (p: Parser[S, A]) (f: A -> B): Parser[S, B] =
   \(input: PolyList[S]) -> map[Binding[S, A], Binding[S, B]]
   (\(v: Binding[S, A]) -> (v._1, (f v._2))) (p input);
 \end{lstlisting}
+
 What is more, \texttt{<@} can also be applied during the parsing process and in this way we can introduce some semantic functions into our parsers.
 
 Additionally, we also extend the \texttt{\textasciitilde} function into two new functions that ignore either the first parser's result or the last parser's one. These two parsers are defined as below.
+
 \begin{lstlisting}
 let (<~)[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]): Parser[S, A] =
 	p ~[S, A, B] q <@[S, (A, B), A] (\(v: (A, B)) -> v._1);
@@ -94,10 +117,12 @@ let (<~)[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]): Parser[S, A] =
 let (~>)[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]): Parser[S, B] =
 	p ~[S, A, B] q <@[S, (A, B), B] (\(v: (A, B)) -> v._2);
 \end{lstlisting}
+
 With these transformers, one can conveniently build a parser for a context free language. However, we can introduce more advanced combinators on the basis of the provided combinators and transformers. These advanced combinators is to introduce in the next section.
 
 \section{Advanced Combinators}
 The first parser we are to introduce is \texttt{many}. This parser accepts another parser and continuously applies this parser on the input. With the given transformers, now we can easily define our repetition parser and its extension \texttt{many1} as follows.
+
 \begin{lstlisting}
 let rec many[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
     \(input: PolyList[S]) ->
@@ -112,23 +137,29 @@ let many1[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
         <@[S, (R, PolyList[R]), PolyList[R]] (\(v: (R, PolyList[R])) ->
         Cons[R] v._1 v._2)) input;
 \end{lstlisting}
+
 The difference between \texttt{many} and \texttt{many1} is that the latter one does not accept empty string.
 
 Another combinator, called \texttt{option}, is used to generate a result containing one or zero element, depending on whether it has successfully parsed a symbol or not. This combinator is defined as below.
+
 \begin{lstlisting}
 let option[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
     p <@[S, R, PolyList[R]] (\(v: R) -> createList[R] v)
     <|>[S, PolyList[R]] (succeed[S, PolyList[R]] (Nil[R]));
 \end{lstlisting}
+
 Further, we define a series of combinators parsing digits, characters, parenthesis and square brackets so that one can directly use them for simple parsing tasks.
 
 When considering a situation under which we need to parse a series of tokens separated by some symbols, like commas and semicolons. Thus, we define a combinator \texttt{listOf} to accomplish it.
+
 \begin{lstlisting}
 let listOf[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]):
 Parser[S, PolyList[A]] =
     p <~>[S, A] (many[S, A] (q ~>[S, B, A] p)) <|>[S, PolyList[A]] (succeed[S, PolyList[A]] (Nil[A]));
 \end{lstlisting}
+
 A more complicated situation is that the separator itself also contains semantic meanings. As a result, we define two combinators called \texttt{chainr} and \texttt{chainl} which combine parse trees using the operation defined in the separator either from right to left or from left to right. To implement it, we need two helper functions called \texttt{foldr} and \texttt{foldl} respectively. These two helper functions and combinators are as below.
+
 \begin{lstlisting}
 let rec foldr[A, B] (f: A -> B -> B) (x: B) (xs: PolyList[A]): B =
     case last[A] xs of
@@ -161,7 +192,9 @@ Parser[S, A] =
                 (foldl[((A -> A -> A), A), A]
                     (flip[((A -> A -> A), A), A, A] (ap2[A])));
 \end{lstlisting}
+
 What is more, we may also need to analyse a situation with two options and generate a result according to the matching one. This can be done by combining \texttt{<@} and \texttt{option} combinators. As this is a common situation in the real parsing world, we define a new combinator denoted with \texttt{<?@} to handle with it. The function is as below.
+
 \begin{lstlisting}
 let (<?@)[S, A, R] (p: Parser[S, PolyList[A]]) (t: (R, A -> R))
         : Parser[S, R] =
@@ -170,9 +203,11 @@ let (<?@)[S, A, R] (p: Parser[S, PolyList[A]]) (t: (R, A -> R))
                 Nil           -> t._1
         |       Cons x xs -> t._2 x);
 \end{lstlisting}
+
 Based on these advanced combinators, we define more practical combinators to ease parsing tasks, such as a parser that deals with natural numbers.
 
 However, when combining the parser \texttt{many} and \texttt{option} on an input, there may be lots of backtracking possibilities introduced. This may become a trouble when we want to parse a series of input as a whole. Thus, we define a combinator \texttt{greedy} which takes all parsing results or nothing. This combinator is constructed on the basis of another combinator called \texttt{firstResult} which, as is suggested by its name, picks out the first parsing result all the time. These two combinators are listed as below.
+
 \begin{lstlisting}
 let firstResult[S, A] (p: Parser[S, A]): Parser[S, A] =
     \(input: PolyList[S]) ->
@@ -183,7 +218,8 @@ let firstResult[S, A] (p: Parser[S, A]): Parser[S, A] =
 let greedy[S, A] (p: Parser[S, A]): Parser[S, PolyList[A]] =
     firstResult[S, PolyList[A]] (many[S, A] p);
 \end{lstlisting}
-Now we have already had a relatively complete parser combinator library. In the next chapter, we will build a simple arithmetic parser based on the existing library to show how it works.
+
+Now we have already had a relatively complete parser combinator library. Later in chapter 6 we will build an arithmetic parser based on the existing library to show how it works and extent with more self application possibilities. And again in that chapter, we will also introduce an optimization technique called \textbf{packrat parsing} as a glimpse of potential efficiency improvement. We will finish this chapter with a little more discussion presented in the next section.
 
 \section{Discussion}
-Recursive descent down parsing is a dominant parsing technique in the practical parsing engineering realm. Using parser combinators to build one's own parsers is much more programmer friendly and scalable. However, to combine a parser is still not an easy task due to the different type of functions provided in the library. This problem is also the same to a packrat parser. Since one needs to build a packrat parser for a particular language by himself, it is better that these parser combinators in the library share a common type so that they can be combined and extended conveniently. And this problem can be solved by introducing a mathematical concept called \textbf{Monad}. To design a parser library in the monadic way, next chapter will have detail introduction.
+Recursive descent down parsing is a dominant parsing technique in the practical parsing engineering realm. Using parser combinators to build one's own parsers is much more programmer friendly and scalable. However, to combine a parser is still not an easy task due to the different type of functions provided in the library. Since one needs to build a specific parser for a particular language by himself, it is better that these parser combinators in the library share a common type or observe a common restriction so that they can be combined and extended conveniently. And this problem can be solved by introducing a mathematical concept called \textbf{Monad}. To design a parser library in the monadic way, next chapter will have detail introduction.
