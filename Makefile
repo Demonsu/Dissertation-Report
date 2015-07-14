@@ -8,9 +8,7 @@ report.pdf: report.tex report.bib
 .PHONY: clean
 clean:
 	latexmk -c
-	rm *.fls
 
 .PHONY: clean-all
 clean-all:
 	latexmk -C
-	rm *.fls
