@@ -8,12 +8,12 @@ This section demonstrates an arithmetic expression and its generalized version t
 An arithmetic expression can be constructed by an integer (we do not consider any floating numbers here), a variable, a function call and several operators with predefined priorities. This data structure can be described as follows.
 \begin{lstlisting}
 data Expr = Con Int
-          |   Var CharList
-          |   Fun CharList PolyList[Expr]
-          |   Add Expr Expr
-          |   Min Expr Expr
-          |   Mul Expr Expr
-          |   Div Expr Expr;
+          | Var CharList
+          | Fun CharList PolyList[Expr]
+          | Add Expr Expr
+          | Min Expr Expr
+          | Mul Expr Expr
+          | Div Expr Expr;
 \end{lstlisting}
 This grammar can be split into two components. The first one is \texttt{factor} which contains a constant, a variable, a function call or an expression and is separated by '*' or '/'.  The second one is \texttt{term} which contains \texttt{factors} and is separated by '+' or '-'.
 To parse this grammar, we will define three combinators by combining the existing combinators in our library. The first combinator is called \texttt{fact} which designed to parse a factor. The second combinator is called \texttt{term} that is to parse a term. The third combinator is \texttt{expr} that parses the expression as a whole. These three parsers are shown as below.
@@ -80,7 +80,7 @@ let expr1: Parser[Char, Expr] = foldr[PolyList[Op[Expr]], Parser[Char, Expr]]   
 \end{lstlisting}
 The parser \texttt{expr1} does the same thing as \texttt{expr} but this way it is combined with generalized combinators. We can also parse other kinds of expressions by providing self-defined operations. To parse a more complicated grammar with possible variables bindings, we will introduce a skeleton in the next section.
 
-\section{Self Application}
+\subsection{Self Application}
 As for a given string that follows BNF grammar, we can build a parser to parse all this kinds of strings. Things we need to do are firstly defining a type to associate variables under certain environment and implementing combinators that parse different components of a BNF string.
 
 First things first. We define a type called \texttt{Env} as a series of tuples with the first element denoting a key and the second one its value. To bind a variable and its value, we use a helper function called \texttt{assoc}. And to apply some operations on all variables in an environment, we define a \texttt{mapenv} to realize it. These implementations are listed below.
@@ -157,7 +157,7 @@ As is shown above, \texttt{parsSym} distinguishes cases for terminal and non-ter
 
 Up to now, we have implemented recursive descent parsers with our library. But there is a problem that each time the parser fails, it will backtrack from the beginning and re-parse with another alternative. This can significantly slow down the parsing efficiency. To solve it, we have explored packrat parsing technique and introduced it in the next section.
 
-\section{Packrat Parsing}
+\subsection{Packrat Parsing}
 Considering parsing an arithmetic expression simply like '9'. If we define an arithmetic expression's grammar as below.
 \begin{lstlisting}
 let sum: Parser[Any] = product "+" sum | product
@@ -1053,7 +1053,6 @@ All the case studies in \textbf{Pretty Printer} share the same ADT definition of
 "There is no poem as lovely as a tree" -- Joyce Kilmer
 \subsubsection{Implementation}
 
-
 The first case study I did for all my pretty printer libraries is tree. And it's defined as:
 
 \begin{lstlisting}
@@ -1061,20 +1060,24 @@ data BTree = Node String PList[BTree];
 \end{lstlisting}
 
 As discussed in Section\ref{section:printer}. My library provides several basic combinators:
+
 \begin{itemize}
 \item text:    for printing string
 \item line:    for line break
 \item nest:    for indentation
 \item group:   for line breaks compress
-\item <>:      for document concatenation
+\item \texttt{<>}:      for document concatenation
 \end{itemize}
-I use "[]" to show the hieratical structure between tree nodes, and assuming that nodes on the same level could be printed into one line when the line width is long enough.
+
+I use \texttt{"[]"} to show the hieratical structure between tree nodes, and assuming that nodes on the same level could be printed into one line when the line width is long enough.
 \begin{lstlisting}
 let bracket (l: String) (d: Doc) (r: String): Doc =
     group (text l <> (nest 2 (line <> d)) <> line <> text r)
 ;
 \end{lstlisting}
+
 Then a printer for the tree can be wrote:
+
 \begin{lstlisting}
 let rec showTree (tree: BTree): Doc=
     case tree of
@@ -1153,6 +1156,7 @@ data ArithExpr = Add ArithExpr ArithExpr
 \end{lstlisting}
 
 It looks quite straight forward. However, it misses a piece of important information in the definition, the parentheses. So the printer needs to add them automatically by analysing the context. At first glance, this is an interesting problem and there is no good solution without fully "if" "else". Since you already know something about both F2J and our library. We leave the solution in the following source code for you to further understand our library.
+
 \begin{lstlisting}
 let rec braketExpr (expr: ArithExpr): Doc =
 
@@ -1180,6 +1184,7 @@ showArithExpr (expr: ArithExpr): Doc =
 
 \subsubsection{Test}
 Let's just try a long test case to see whether the printer outputs the correct parentheses.
+
 \begin{lstlisting}
 let expr= Mul (Add (Sub (Integer 1) (Integer 2)) (Div (Integer 3) (Integer 4)))
           (Sub (Mul (Add (Integer 5) (Integer 6)) (Integer 7)) (Integer 8))
@@ -1187,6 +1192,7 @@ let expr= Mul (Add (Sub (Integer 1) (Integer 2)) (Div (Integer 3) (Integer 4)))
 \end{lstlisting}
 
 Result:
+
 \begin{lstlisting}
 (1 - 2 + 3 / 4) * ((5 + 6) * 7 - 8)
 \end{lstlisting}
@@ -1195,6 +1201,7 @@ Result:
 
 \subsubsection{Implementation}
 The ADT of a XML document is as followed.
+
 \begin{lstlisting}
 data XMLNode = XMLText      String
              | XMLAttr      String String
@@ -1204,7 +1211,9 @@ data XMLNode = XMLText      String
              | XMLProcInst  String PList[XMLNode]
 ;
 \end{lstlisting}
+
 Then the pretty printer of XML can be easily wrote:
+
 \begin{lstlisting}
 let quoted (s: String): String=
     "\"".concat(s.concat("\""))
@@ -1238,7 +1247,9 @@ showXMLs (xmls: PList[XMLNode]): Doc=
 \end{lstlisting}
 
 \subsubsection{Test}
+
 Again, we use a complicate case to test it:
+
 \begin{lstlisting}
 let xml=
 Cons[XMLNode]
@@ -1282,10 +1293,13 @@ We get the output:
 
 \subsubsection{Implementation}
 The ADT of a Feather Weight Java document is as followed.
+
 \begin{lstlisting}
 
 \end{lstlisting}
+
 Then the pretty printer of Feather Weight Java can be easily wrote(only main printer is showed):
+
 \begin{lstlisting}
 showFJClass (class : FJClass) : Doc =
     case class of
@@ -1314,7 +1328,9 @@ showFJClasses (classes : PList[FJClass]) : Doc =
 \end{lstlisting}
 
 \subsubsection{Test}
+
 For Feather Weight Java, we use unit tests, since the language is bit complex.
+
 \begin{lstlisting}
 let tests=  (testFJClass                    +>[TestFn]
             (testFJMethod2                  +>[TestFn]
@@ -1434,6 +1450,7 @@ showXMLs (xmls: PList[XMLNode]): Doc=
 
 \subsubsection{Test}
 Again, we use a complicate case to test it:
+
 \begin{lstlisting}
 let xml=
 Cons[XMLNode]
@@ -1461,6 +1478,7 @@ Cons[XMLNode]
 \end{lstlisting}
 
 We get the output:
+
 \begin{lstlisting}
 <?xml version="1.0" encoding="UTF-8"?>
 <p color="red" name="xiafan">
