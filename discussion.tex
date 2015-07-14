@@ -1,13 +1,15 @@
 \chapter{Discussion}
 
+F2J is a new born programming language. While we using it to build the parser and pretty printer library, we have encountered a lot of problems. Most of them were solved with the members in HKU programming group, but still could be improved:
+
 \begin{itemize}
 \item Module System
 
-Currently F2J only supports single file compilation, which means that I have to put all the codes in one file. It is hard to manage the project and reuse most of the codes.
+Currently F2J only supports single file compilation, which means that I have to put all the codes in one file. It is hard to manage the project and reuse most of the codes. Also, having module system could
 
 \item Exceptions
 
-F2J does not supports exceptions, so that I cannot use those Java functions that will throw exceptions, such as I/O libraries.
+F2J does not supports exceptions, so that I cannot use those Java functions that will throw exceptions, such as I/O libraries. Currently we could make use of the power of Java interpolation of F2J by writing a bridge class in Java to call those fuctions that may throw exceptions, but that just a temporary solution.
 
 \item Type Inferences
 
