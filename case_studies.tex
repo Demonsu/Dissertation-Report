@@ -1,11 +1,13 @@
 \chapter{Case Studies} \label{section:mparser}
 
 \section{General Parser}
+This section demonstrates several applications of our general parser combinator library.
 
 \subsection{Arithmetic Expression}
-This section demonstrates an arithmetic expression and its generalized version to provide a glimpse of using the library.
+Here is a parser for an arithmetic expression and its generalized version to provide a glimpse of how to use the library.
 
 An arithmetic expression can be constructed by an integer (we do not consider any floating numbers here), a variable, a function call and several operators with predefined priorities. This data structure can be described as follows.
+
 \begin{lstlisting}
 data Expr = Con Int
           | Var CharList
@@ -15,8 +17,10 @@ data Expr = Con Int
           | Mul Expr Expr
           | Div Expr Expr;
 \end{lstlisting}
+
 This grammar can be split into two components. The first one is \texttt{factor} which contains a constant, a variable, a function call or an expression and is separated by '*' or '/'.  The second one is \texttt{term} which contains \texttt{factors} and is separated by '+' or '-'.
 To parse this grammar, we will define three combinators by combining the existing combinators in our library. The first combinator is called \texttt{fact} which designed to parse a factor. The second combinator is called \texttt{term} that is to parse a term. The third combinator is \texttt{expr} that parses the expression as a whole. These three parsers are shown as below.
+
 \begin{lstlisting}
 let rec fact: Parser[Char, Expr] =
     \(cs: CharList) -> (
@@ -50,7 +54,9 @@ and expr: Parser[Char, Expr] =
             (symbol '-' <@[Char, Char, (Expr -> Expr -> Expr)]
                 (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Min a b)))) cs;
 \end{lstlisting}
+
 Now we can just use \texttt{expr} to parse the arithmetic expressions. However, this combinator only suites for expressions with '+', '-', '*', '/' operations. To generalize it, we can define a parser that can parse any expressions containing any predefined operations with different priorities. This task is relatively easy thanks to the combinators in the library. We firstly define an operation type \texttt{Op} which is a tuple that contains a symbol of operation and its behaviour. Then we define a combinator \texttt{gen} that accepts such operations and a parser, and applies the operation on the parsing result. By using \texttt{gen}, we can change our arithmetic expression parser into the below format with some helper combinators introduced.
+
 \begin{lstlisting}
 type Op[A] = (Char, A -> A -> A);
 
@@ -71,19 +77,21 @@ let addis: PolyList[Op[Expr]] = Cons[Op[Expr]] ('+',
   \(b: Expr) -> Add a b) (Cons[Op[Expr]] ('-', \(a: Expr) ->
   \(b: Expr) -> Min a b) (Nil[Op[Expr]]));
 
-let expr1: Parser[Char, Expr] = foldr[PolyList[Op[Expr]], Parser[Char, Expr]]   (gen[Expr])
+let expr1: Parser[Char, Expr] = foldr[PolyList[Op[Expr]], Parser[Char, Expr]] (gen[Expr])
   fact (Cons[PolyList[Op[Expr]]]
     addis
         (Cons[PolyList[Op[Expr]]]
             multis
                 (Nil[PolyList[Op[Expr]]])));
 \end{lstlisting}
+
 The parser \texttt{expr1} does the same thing as \texttt{expr} but this way it is combined with generalized combinators. We can also parse other kinds of expressions by providing self-defined operations. To parse a more complicated grammar with possible variables bindings, we will introduce a skeleton in the next section.
 
 \subsection{Self Application}
 As for a given string that follows BNF grammar, we can build a parser to parse all this kinds of strings. Things we need to do are firstly defining a type to associate variables under certain environment and implementing combinators that parse different components of a BNF string.
 
 First things first. We define a type called \texttt{Env} as a series of tuples with the first element denoting a key and the second one its value. To bind a variable and its value, we use a helper function called \texttt{assoc}. And to apply some operations on all variables in an environment, we define a \texttt{mapenv} to realize it. These implementations are listed below.
+
 \begin{lstlisting}
 type Env[A, B] = PolyList[(A, B)];
 let rec assoc[D] (env: Env[Symbol, D]) (s: Symbol) (default: D): D =
@@ -96,7 +104,9 @@ let rec mapenv[S, A, B] (f: A -> B) (env: Env[S, A]): Env[S, B] =
         Nil       -> Nil[(S, B)]
     |   Cons e es -> Cons[(S, B)] (e._1, f e._2) (mapenv[S, A, B] f es);
 \end{lstlisting}
+
 BNF grammar contains either terminal words or non-terminal words. By abstracting it, we use a data type \texttt{Symbol} to represent it. The right hand side of the production rule must be a series of possibilities, each of which is a list of symbols. Hence, the grammar \texttt{Gram} can be represented as below.
+
 \begin{lstlisting}
 data Symbol = Term CharList
             | Nont CharList;
@@ -104,7 +114,9 @@ type Alt = PolyList[Symbol];
 type Rhs = PolyList[Alt];
 type Gram = Env[Symbol, Rhs];
 \end{lstlisting}
+
 Based on these types, now we can build a parser \texttt{bnf} to parse a BNF string by combining combinators in the library together.
+
 \begin{lstlisting}
 let bnfTerm (termp: Parser[Char, CharList]): Parser[Char, Symbol] =
     sp[CharList] termp <@[Char, CharList, Symbol] (\(cs: CharList) ->
@@ -128,11 +140,15 @@ let rule (termp: Parser[Char, CharList]) (nontp: Parser[Char, CharList]): Parser
 let bnf (nontp: Parser[Char, CharList]) (termp: Parser[Char, CharList]): Parser[Char, Gram] =
     many[Char, (Symbol, Rhs)] (rule termp nontp);
 \end{lstlisting}
+
 Now given a BNF string, we are potentially available to build our own parse tree with parser \texttt{bnf}. But it is a good idea to define a new parse tree for generic application. This data type is called \texttt{GramTree}, a multi-branching tree.
+
 \begin{lstlisting}
 data GramTree = Node Symbol (PolyList[GramTree]);
 \end{lstlisting}
+
 Then we define a combinator \texttt{parsGram} that parses a symbol, an alternative and the right hand side of a rule. This combinator, again, is implemented by several helper functions.
+
 \begin{lstlisting}
 let rec parsSym (gram: Gram) (s: Symbol): Parser[Symbol, GramTree] =
     case s of
@@ -153,20 +169,24 @@ and parsRhs (gram: Gram) (r: Rhs): Parser[Symbol, PolyList[GramTree]] =
 let parsGram (gram: Gram) (start: Symbol): Parser[Symbol, GramTree] =
  parsSym gram start;
 \end{lstlisting}
+
 As is shown above, \texttt{parsSym} distinguishes cases for terminal and non-terminal parser functions. If it is a terminal one, \texttt{parsSym} will generate a parser that only recognizes the terminal symbol and then appends a \texttt{Node} onto it. As for a non-terminal symbol, it searches in the environment and invokes \texttt{parsRhs} to generate parsers for each alternative in the right hand side of the production rule. Then a \texttt{choice} is made among them and then \texttt{parsAlt} is invoked to parse an individual symbol in the alternative and combines them via a \texttt{sequence} function. With this function, one can build a parser for languages whose grammar observe BNF.
 
-Up to now, we have implemented recursive descent parsers with our library. But there is a problem that each time the parser fails, it will backtrack from the beginning and re-parse with another alternative. This can significantly slow down the parsing efficiency. To solve it, we have explored packrat parsing technique and introduced it in the next section.
+Up to now, we have demonstrated what we can do with our general parser combinators provided in the library. But there is a problem that each time the parser fails, it will backtrack from the beginning and re-parse with another alternative. This can significantly slow down the parsing efficiency. To solve it, we have explored packrat parsing technique and introduced it in the next subsection.
 
 \subsection{Packrat Parsing}
 Considering parsing an arithmetic expression simply like '9'. If we define an arithmetic expression's grammar as below.
+
 \begin{lstlisting}
 let sum: Parser[Any] = product "+" sum | product
 let product: Parser[Any] = primary "*" product | primary
 let primary: Parser[Any] = "(" expr ")" | floatingPointNumber
 \end{lstlisting}
+
 Then the number '9' will be parsed firstly as a floating point number 9 but fails on \texttt{product "+" sum} and then be parsed again through \texttt{product} to \texttt{floatingPointNumber} again although it has already successfully parsed as 9. This problem will occur every time it fails to parse an alternative. To avoid it, we can cache a successfully parsed intermediate result somewhere and if this result is used again, it can be read from the cache directly instead of parsing it again. This is the basic idea of \texttt{Packrat Parsing}.
 
 To solve this problem above, we need an elegantly designed data structure called \texttt{Result} and a data type called \texttt{Derivs} as below.
+
 \begin{lstlisting}
 data Result[V] = Parsed V {
                     dvAdditive  : Thunk[Result[Int]],
@@ -185,7 +205,9 @@ type Derivs = {
     dvChar      : Thunk[Result[Char]]
 };
 \end{lstlisting}
+
 Now we can use the \texttt{parse} function as below to parse the arithmetic expressions as above and enjoy the efficiency improvement brought by the cached intermediate results.
+
 \begin{lstlisting}
 let rec parse (cs: CharList): Derivs = {
     dvAdditive  = \(x:Unit) -> add (parse cs),
@@ -208,7 +230,7 @@ and chr (cs : CharList) (d : Derivs) : Result[Char] =
     |   Nil -> NoParse[Char];
 \end{lstlisting}
 
-Although we obtain better efficiency, packrat parsing also has its disadvantages, like additional storage requirements. We will leave these to the next section together with a general discussion of our recursive descent parsing library which has been introduced in the previous sections.
+Although we obtain better efficiency, packrat parsing also has its disadvantages, like additional storage requirements and specific requirements for different languages. The former one can be solved with meticulously designed grammar tree structures and caching mechnisms while the latter one can be handled with a monadic parser. In the next section, we will introduce more case studies for our monadic parser combinators provided in the library.
 
 \section{Monadic Parser}
 
