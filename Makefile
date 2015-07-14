@@ -3,7 +3,7 @@ all: report.pdf
 
 .PHONY: report.pdf
 report.pdf: report.tex report.bib
-	latexmk -xelatex -slient report
+	latexmk -xelatex -silent report
 
 .PHONY: clean
 clean:
