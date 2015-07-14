@@ -159,7 +159,7 @@ let rec showDoc(doc: Doc): String =
 
 \end{lstlisting}
 
-\section{A Pretty Printer with Alternative Layouts}
+\section{A Pretty Printer with Alternative Layouts} \label{section:printer}
 
 In primitive pretty printer, a document was regarded as equivalent to a string. Now, it should be viewed as a set of strings, each corresponding to a different layout of the same document. And what the library need to do is to select a best one from the set.
 
@@ -417,7 +417,6 @@ let rec looptext (x: Int) : Doc =
     else
         NIL
 ;
-
 pretty 30 (looptext 200)
 \end{lstlisting}
 
@@ -438,6 +437,121 @@ And I draw the raw data into a line chart(Figure \ref{fig:efficiency line chart}
 
 
 \section{Case Studies}
+
+All the case studies in \textbf{Pretty Printer} share the same ADT definition of the case studies in Section\ref{section:mparser} for further integration.
+
+\subsection{Tree Printer}
+
+\subsubsection{Implementation}
+"There is no poem as lovely as a tree" -- Joyce Kilmer
+
+So the first case study I did for all the pretty printer library is tree. And it's defined as:
+
+\begin{lstlisting}
+data BTree = Node String PList[BTree];
+\end{lstlisting}
+
+As discussed in Section\ref{section:printer}. My library provides several basic combinators:
+\begin{itemize}
+\item text:    for printing string
+\item nest:    for indedntation
+\item group:   for line breaks compress
+\item <>:      for document concatenation
+\end{itemize}
+I use "[]" to show the hieratical structure between tree nodes, and assuming that nodes on the same level could be printed into one line when the line width is long enough.
+\begin{lstlisting}
+let bracket (l: String) (d: Doc) (r: String): Doc =
+    group (text l <> (nest 2 (line <> d)) <> line <> text r)
+;
+\end{lstlisting}
+Then a printer for the tree can be wrote:
+\begin{lstlisting}
+let rec showTree (tree: BTree): Doc=
+    case tree of
+            Node x xs   -> (text x) <> (showBracket xs)
+and
+showBracket (tree: PList[BTree]): Doc=
+    case tree of
+            Nil         -> nil
+        |   Cons x xs   -> bracket "[" (showTrees (x +>[BTree] xs)) "]"
+and
+showTrees (tree: PList[BTree]): Doc=
+    case tree of
+            Nil         -> nil
+        |   Cons x xs   ->
+        {
+            case xs of
+                Nil     -> (showTree x)
+            |   Cons y ys   -> (showTree x) <> (text ",") <> (line) <> (showTrees (y +>[BTree] ys))
+        }
+;
+\end{lstlisting}
+
+\subsubsection{Test}
+
+For a tree stored in ADT:
+\begin{lstlisting}
+let tree2 = Node "aaa"
+    (Cons[BTree] (Node "bbb" (Cons[BTree] (Node "ee" (Nil[BTree])) (Cons[BTree] (Node "ff" (Nil[BTree])) (Nil[BTree]) ))) (Cons[BTree] (Node "cc" (Nil[BTree])) (Cons[BTree] (Node "dd" (Nil[BTree])) (Nil[BTree]))))
+;
+\end{lstlisting}
+
+I test the printer with different line width:
+\begin{lstlisting}
+println "Line Width 10:";
+println (pretty 10 (showTree tree2));
+
+println "Line Width 20:";
+println (pretty 20 (showTree tree2));
+
+println "Line Width 30:";
+println (pretty 30 (showTree tree2))
+\end{lstlisting}
+
+My printer will have the output:
+\begin{lstlisting}
+Line Width 10:
+aaa[
+  bbb[
+    ee,
+    ff
+  ],
+  cc,
+  dd
+]
+Line Width 20:
+aaa[
+  bbb[ ee, ff ],
+  cc,
+  dd
+]
+Line Width 30:
+aaa[ bbb[ ee, ff ], cc, dd ]
+\end{lstlisting}
+
+\subsection{Simple Arithmetic Expression Printer}
+
+\subsubsection{Implementation}
+
+\subsubsection{Test}
+
+\subsection{XML Printer}
+
+\subsubsection{Implementation}
+
+\subsubsection{Test}
+
+\subsection{Feather Weight Java Printer}
+
+\subsubsection{Implementation}
+
+\subsubsection{Test}
+
+\subsection{A Subset of F2J Printer}
+
+\subsubsection{Implementation}
+
+\subsubsection{Test}
 
 
 
