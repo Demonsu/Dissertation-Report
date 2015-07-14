@@ -8,9 +8,9 @@ A monadic parser could be expressed in a modular way in terms of two simpler mon
 
 Monadic parser combinators makes it easy to write complicated parsers by combining those basic parsers togethers, which makes the parser looks just like the grammer definition in BNF notation. With the benefic of monadic nature, we could easily change the nature of the basic parser monad and the modification will automatically arise to those existing parsers via lifting construction. It highly increases the robustness, flexibility and availability of the library.
 
-This library is built in F2J, which does not supports type classes just like Haskell. So in this library, I used the most basic functions \texttt{bind} and \texttt{result} just for \texttt{Parser[T]} to build monadic parsers. I also provides some useful basic parsers, such as \texttt{char} for parsing one single character, \texttt{string} for parsing a specific sequence of characters, \texttt{choice} and \texttt{many} for choice and repeatition.
+This library is built in F2J, which does not supports type classes just like Haskell. So in this library, We used the most basic functions \texttt{bind} and \texttt{result} just for \texttt{Parser[T]} to build monadic parsers. We also provides some useful basic parsers, such as \texttt{char} for parsing one single character, \texttt{string} for parsing a specific sequence of characters, \texttt{choice} and \texttt{many} for choice and repeatition.
 
-I used this parser combinators library for case studies, parsing simple arithmetic expression, XML, Feather Weight Java and a subset grammar of F2J itself. Currently F2J does not support modular compilation, to manage the large code base of the case studies, I wrote a simple script to perform \textit{C-like include} to simulate modular system. To test the parsers above, I wrote a simple test framework in F2J to manage and run test cases automatically.
+We used this parser combinators library for case studies, parsing simple arithmetic expression, XML, Feather Weight Java and a subset grammar of F2J itself. Currently F2J does not support modular compilation, to manage the large code base of the case studies, We wrote a simple script to perform \textit{C-like include} to simulate modular system. To test the parsers above, We wrote a simple test framework in F2J to manage and run test cases automatically.
 
 \section{Project Structure}
 
@@ -25,7 +25,7 @@ The project is hosted on Github (\url{https://github.com/zonyitoo/FParser}) and 
 `-- src
 \end{lstlisting}
 
-The main source code is located under \texttt{src} folder. I also provide a \texttt{Makefile} for building and running the tests, just type \texttt{make test} under the root directory.
+The main source code is located under \texttt{src} folder. We also provide a \texttt{Makefile} for building and running the tests, just type \texttt{make test} under the root directory.
 
 \begin{lstlisting}[language={}]
 src
@@ -82,7 +82,7 @@ According to \cite{Hutton:1996}, the parser could be defined as
 type Parser[T] = String -> [(T, String)];
 \end{lstlisting}
 
-Because F2J is call by value, so if I use the builtin List directly, the parser will have very bad performance, because it will try to generate all possible intermediate results but just a few of them are useful for producing the result. So I make a lazy evaluated list \texttt{PList} in \texttt{plist.sf}:
+Because F2J is call by value, so if we use the builtin List directly, the parser will have very bad performance, because it will try to generate all possible intermediate results but just a few of them are useful for producing the result. So we make a lazy evaluated list \texttt{PList} in \texttt{plist.sf}:
 
 \begin{lstlisting}
 data PList[A] = Nil
@@ -100,7 +100,7 @@ let invoke[A] (t : Thunk[A]) : A =
 
 When we need the rest of the list, just use \texttt{invoke} to enforce evaluation of the rest of the list. So the parser will not parse all intermediate results unless they are required.
 
-Also, the \texttt{String} in F2J is Java's builtin String, which may not suitable for parsing, because lots of \texttt{substring} calls and string concatenation are required while parsing. It would be better if we transform the input to become a linked list of \texttt{Char}. So I also define a type \texttt{PString} in \texttt{pstring.sf}.
+Also, the \texttt{String} in F2J is Java's builtin String, which may not suitable for parsing, because lots of \texttt{substring} calls and string concatenation are required while parsing. It would be better if we transform the input to become a linked list of \texttt{Char}. So we also define a type \texttt{PString} in \texttt{pstring.sf}.
 
 \begin{lstlisting}
 type PString = PList[Char];
@@ -418,13 +418,13 @@ let between[L, R, P] (l : Parser[L]) (r : Parser[R]) (p : Parser[P])
 \end{lstlisting}
 
 The operator \texttt{*>} is just an alias of \texttt{>>}.
- 
+
 \section{Case Studies} \label{section:mparser}
 \subsection{Simple Arithmetic Expression Parser}
 
 \subsubsection{Parser Implementation}
 
-The first parser I have made is a parser for simple arithmetic expression parser. Simple arithmetic expression, as all we have known, it could be defined as
+The first parser we have made is a parser for simple arithmetic expression parser. Simple arithmetic expression, as all we have known, it could be defined as
 
 \begin{lstlisting}[language={}]
 expr   ::= term | expr + term | expr - term
@@ -535,9 +535,9 @@ and arithExprFactor : Parser[ArithExpr] =
             s;
 \end{lstlisting}
 
-First of all, \texttt{arithExprBracketSurrounded} parser will parse \texttt{( expr )} of \texttt{factor} as defined above. Then define \texttt{arithExpr}, \texttt{arithExprTerm} and \texttt{arithExprFactor} corresponding to \texttt{expr}, \texttt{term} and \texttt{factor} definitions. I have used a new parser combinator \texttt{chainl1} for parsing non-empty sequence of items separated by operators that associate to the left. Take \texttt{arithExpr} as an example, the \texttt{chainl1} will parse a sequence of \texttt{arithExprTerm} that separated by \texttt{arithExprAddSub}, and then reduce the result by applying the result of \texttt{arithExprAddSub}. The \texttt{arithExprSpace} parser only for consuming the empty spaces, which could be completely ignored.
+First of all, \texttt{arithExprBracketSurrounded} parser will parse \texttt{( expr )} of \texttt{factor} as defined above. Then define \texttt{arithExpr}, \texttt{arithExprTerm} and \texttt{arithExprFactor} corresponding to \texttt{expr}, \texttt{term} and \texttt{factor} definitions. We have used a new parser combinator \texttt{chainl1} for parsing non-empty sequence of items separated by operators that associate to the left. Take \texttt{arithExpr} as an example, the \texttt{chainl1} will parse a sequence of \texttt{arithExprTerm} that separated by \texttt{arithExprAddSub}, and then reduce the result by applying the result of \texttt{arithExprAddSub}. The \texttt{arithExprSpace} parser only for consuming the empty spaces, which could be completely ignored.
 
-Finally, I also provide a helper function to evaluate the syntax tree to an integer:
+Finally, we also provide a helper function to evaluate the syntax tree to an integer:
 
 \begin{lstlisting}
 let rec arithExprEval (e : ArithExpr) : Int =
@@ -554,7 +554,7 @@ It is obvious and easy to understand. If it is a \texttt{Integer}, then the valu
 
 \subsubsection{Unit Tests}
 
-For unit test, I chose to test the following cases
+For unit test, we chose to test the following cases
 
 \begin{lstlisting}[language={}]
 1
@@ -671,7 +671,7 @@ So the value of \texttt{1+1*(2+3)} is 6.
 
 \subsubsection{Parser Implementation}
 
-After trying to build an arithmetic expression parser, I began to think about a little bit more complicated parser. I finally chose the XML as my next case study language, because XML is simple, easy to parse and has recursive structure. But I will not build a practical XML parser, just support the core grammar of XML.
+After trying to build an arithmetic expression parser, we began to think about a little bit more complicated parser. We finally chose the XML as my next case study language, because XML is simple, easy to parse and has recursive structure. But we will not build a practical XML parser, just support the core grammar of XML.
 
 First of all, we could define an ADT for XML syntax tree
 
@@ -872,7 +872,7 @@ let parseXML : Parser[PList[XMLNode]] =
 
 \subsubsection{Unit Tests}
 
-For unit test, I chose to test the following cases
+For unit test, we chose to test the following cases
 
 \begin{lstlisting}[language={}]
 <a></a>
@@ -893,7 +893,7 @@ println (parseOutputToString[PList[XMLNode]]
             result);
 \end{lstlisting}
 
-All the tests will use \texttt{parseXML} to parse the document. Because the parse result is a list, so I use \texttt{pListToString} to convert the result to string.
+All the tests will use \texttt{parseXML} to parse the document. Because the parse result is a list, so we use \texttt{pListToString} to convert the result to string.
 
 The program will output
 
@@ -917,7 +917,7 @@ The parse result is \texttt{[XMLElement a [] []]}, as for the rest test cases' o
 
 \subsubsection{Parser Implementation}
 
-After parsing XML, it's time to parse a practical programming language. I chose Feather Weight Java, which is a small subset of Java. Here is the grammar
+After parsing XML, it's time to parse a practical programming language. We chose Feather Weight Java, which is a small subset of Java. Here is the grammar
 
 \begin{lstlisting}[language={}]
 L ::= class C extends C { C f; K M }
@@ -926,7 +926,7 @@ M ::= C m(C x) { return e; }
 e ::= x | e.f | e.m(e) | new C(e) | (C)e
 \end{lstlisting}
 
-The parser is defined in \texttt{fj\_parser.sf}. It contains more than 400 lines, so I will only introduce the ADT fo the syntax tree.
+The parser is defined in \texttt{fj\_parser.sf}. It contains more than 400 lines, so we will only introduce the ADT fo the syntax tree.
 
 First of all, we should define the type, identifier, and expression:
 
@@ -989,7 +989,7 @@ In Java, the root statement must be a class, so the class parser could be the pa
 
 \subsubsection{Unit Tests}
 
-In this section, I will only choose one test cases for demonstration.
+In this section, we will only choose one test cases for demonstration.
 
 \begin{lstlisting}[language=Java]
 class A extends B {
@@ -1055,7 +1055,7 @@ The rest of results are omitted beause we only need to focus on the first result
 
 \subsection{A Subset of F2J Parser}
 
-We build this parser library for bootstrapping the F2J compiler, so it is a good start to write a parser for F2J. But F2J's grammar is complicated, such as Java interpolation, infix operators and string interpolation. So I chose to implement a subset of F2J's grammar, including
+We build this parser library for bootstrapping the F2J compiler, so it is a good start to write a parser for F2J. But F2J's grammar is complicated, such as Java interpolation, infix operators and string interpolation. So we chose to implement a subset of F2J's grammar, including
 
 \begin{itemize}
 \item Type and Type Annotation
@@ -1105,7 +1105,7 @@ The implementation is in \texttt{f2j\_parser.sf}.
 
 \subsubsection{Parser Implementation}
 
-The file \texttt{f2j\_parser.sf} contains over 500 lines, so I will only present the ADT of F2J's expression.
+The file \texttt{f2j\_parser.sf} contains over 500 lines, so we will only present the ADT of F2J's expression.
 
 First of all, we have the definition of type
 
@@ -1191,11 +1191,11 @@ The \texttt{F2JCaseAlternative} has three parameters, the first one is the type 
 
 The \texttt{F2JRecordItem} represents one record construction, such as \texttt{a: 1}.
 
-The \texttt{F2JExpr} is too obvious, so I think I don't need to give any explaination here.
+The \texttt{F2JExpr} is too obvious, so we think we don't need to give any explaination here.
 
 \subsubsection{Unit Tests}
 
-In this section, I will also demonstrate the parser with only one test case
+In this section, we will also demonstrate the parser with only one test case
 
 \begin{lstlisting}
 data PList[A] = Nil | Cons A (PList[A]);
@@ -1255,7 +1255,7 @@ It is easy to interpret the result, because it's structure just like the input F
 
 \section{Discussions}
 
-While I was implementing this library, I have encountered several problems. Most of them were solved by other teammates in the group (HKU Programming Language Group), but still have some problems has to be solved or to be improved.
+While we was implementing this library, we have encountered several problems. Most of them were solved by other teammates in the group (HKU Programming Language Group), but still have some problems has to be solved or to be improved.
 
 \subsection{Error Reports}
 
@@ -1291,7 +1291,7 @@ Also, the parser currently assumes all inputs are strings, but actually the inpu
 
 Currently F2J does not support module system, so that the whole program must be written in one file. But in practice, when the program has over 1000 lines, it would be very hard to manage and debug. In this project, the file that contains all test cases has over 4000 lines of F2J code.
 
-It would be better if just separate those codes into different files and then combine them together before compile. To achieve that goal, I wrote a script \texttt{include.py} in Python to perform C-like include mechanism.
+It would be better if just separate those codes into different files and then combine them together before compile. To achieve that goal, we wrote a script \texttt{include.py} in Python to perform C-like include mechanism.
 
 The script will try to find a special block comment, which starts with \texttt{\{-\#} and ends with \texttt{\#-\}}, and then find a keyword \texttt{INCLUDE} in the block with the file name to be included. For example
 
@@ -1310,7 +1310,7 @@ Because the special block comments are valid F2J comments, so that they will be 
 
 If the project is small, then writing and runing tests are easy. But when your code grows large, tests become a large code base and become hard to manage and modify.
 
-So I use F2J to write a simple test framework, supporting test functions, test suites and assert functions.
+So we use F2J to write a simple test framework, supporting test functions, test suites and assert functions.
 
 The most basic definitions are in \texttt{testfx.sf}.
 
