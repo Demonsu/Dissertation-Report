@@ -4,13 +4,13 @@ This chapter mainly focuses on the implementation details of a general parser co
 \section{Type of Parser}
 The goal of a parsing task is to analyse a piece of code constructed according to a certain kind of grammar and then transfer it into a parse tree. This parse tree then can be utilized by a compiler to generate machine code. Many approaches can be used to define a basic parser type. For general parsing purposes, we define the parser type in F2J as follow.
 \begin{lstlisting}
-  type Binding[Symbol, Result] = (PolyList[Symbol], Result);
-  type Parser[Symbol, Result] = 
+type Binding[Symbol, Result] = (PolyList[Symbol], Result);
+type Parser[Symbol, Result] = 
 	PolyList[Symbol] -> PolyList[Binding[Symbol, Result]];
 \end{lstlisting}
 Here PolyList is a self-defined data type as below.
 \begin{lstlisting}
-  data PolyList[A] = Nil
+data PolyList[A] = Nil
 	| Cons A (PolyList[A]);
 \end{lstlisting}
 Hence, the parser is a function which accepts a series of symbols and returns a series of bindings of such symbols and its matching result. Within the general combinator library, we will use this type all the time.
@@ -18,17 +18,17 @@ Hence, the parser is a function which accepts a series of symbols and returns a 
 \section{Primitive Parsers}
 Before starting parsing, we need several primitive parsers as our basis to construct our parsers. First is a parser that always parses a given string and returns a certain result regardless of its input. We call this parser \textbf{succeed}. This parser is defined as below.
 \begin{lstlisting}
-  let succeed[S, R] (result: R): Parser[S, R] =
+let succeed[S, R] (result: R): Parser[S, R] =
 	\(input: PolyList[S]) -> 
 	createList[Binding[S, R]] (input, result);
 \end{lstlisting}
 A variation of succeed is a parser that parses an empty string, which is called \textbf{epsilon} in grammar theory.
 \begin{lstlisting}
-  let epsilon[S]: Parser[S, Unit] = succeed[S, Unit] ();
+let epsilon[S]: Parser[S, Unit] = succeed[S, Unit] ();
 \end{lstlisting}
 Another primitive parser is \textbf{fail} which always fails to recognize any inputs and returns an empty list of results.
 \begin{lstlisting}
-  let fail[S, R]: Parser[S, R] =
+let fail[S, R]: Parser[S, R] =
 	\(input: PolyList[S]) -> Nil[Binding[S, R]];
 \end{lstlisting}
 We need these trivial parsers to build new parsers later.
@@ -38,11 +38,11 @@ With the primitive parsers above, we now are able to build a parser for any lang
 
 The first one is a sequential parser. This parser accepts two parsers and applies the first one on the input and then the next one on the rest string. To implement this, we need several helper functions in advance. They are listed as below.
 \begin{lstlisting}
-  let rec map[A, B] (f: A -> B) (l: PolyList[A]): PolyList[B] =
+let rec map[A, B] (f: A -> B) (l: PolyList[A]): PolyList[B] =
     case l of
         Nil       -> Nil[B]
      |  Cons x xs -> Cons[B] (f x) (map [A, B] f xs);
-  let bind[S, A, B] 
+let bind[S, A, B] 
     (p: Parser[S, A]) (f: A -> Parser[S, B]): Parser[S, B] =
     \(input: PolyList[S]) -> concat[Binding[S, B]] 
     (map[Binding[S, A], PolyList[Binding[S, B]]] 
@@ -50,7 +50,7 @@ The first one is a sequential parser. This parser accepts two parsers and applie
 \end{lstlisting}
 Function map is used to apply a function onto each element of a PolyList. And function bind binds the result of the first parser onto the second parser and yields a new parser. With these two parsers, now we can define our sequential parser, denoted with '$\sim$', as follows.
 \begin{lstlisting}
-  let (~)[S, A, B] (p: Parser[S, A]) 
+let (~)[S, A, B] (p: Parser[S, A]) 
     (q: Parser[S, B]): Parser[S, (A, B)] =
 	bind[S, A, (A, B)] p (\(x: A) -> 
 	  bind[S, B, (A, B)] q (\(y: B) -> 
@@ -58,7 +58,7 @@ Function map is used to apply a function onto each element of a PolyList. And fu
 \end{lstlisting}
 The sequential parser accepts two parsers and yields a parser containing a tuple with both two parsing results. Apart from the sequential parser, we also need a choice parser that concatenating two possible parsing results. This parser, denoted with '<|>' is defined as below.
 \begin{lstlisting}
-  let (<|>)[S, A] (p1: Parser[S, A]) (p2: Parser[S, A]): 
+let (<|>)[S, A] (p1: Parser[S, A]) (p2: Parser[S, A]): 
     Parser[S, A] =
 	  \(input: PolyList[S]) -> 
 	    (p1 input) ++[Binding[S, A]] (p2 input);
@@ -68,25 +68,25 @@ Although now we can build a parse tree of our own, but it is still impossible to
 \section{Parser Transformers}
 In this section, we will define some parser transformers that can transform existing parsers into our expecting ones. The first transformer is called '\textbf{sp}', which drops initial spaces from the input and returns rest string.
 \begin{lstlisting}
-  let sp[R] (p: Parser[Char, R]): Parser[Char, R] = \(input: CharList) -> p (dropBlanks(input));
+let sp[R] (p: Parser[Char, R]): Parser[Char, R] = \(input: CharList) -> p (dropBlanks(input));
 \end{lstlisting}
 The second one is \textbf{just}, which accepts a parser and guarantees an empty rest string in the result.
 \begin{lstlisting}
-  let just[S, R] (p: Parser[S, R]): Parser[S, R] =
+let just[S, R] (p: Parser[S, R]): Parser[S, R] =
 	\(input: PolyList[S]) -> filter[Binding[S, R]] (\(v: Binding[S, R]) -> isEmpty[S] (v._1)) (p input);
 \end{lstlisting}
 The third parser transformer is the most powerful one since it can accept a parser and applies a function onto its parsing result, which can easily transform a parser with certain output type into another type. For convenience, we denote this function as '<@' and its implementation is listed as below.
 \begin{lstlisting}
-  let (<@)[S, A, B] (p: Parser[S, A]) (f: A -> B): Parser[S, B] =
+let (<@)[S, A, B] (p: Parser[S, A]) (f: A -> B): Parser[S, B] =
 	\(input: PolyList[S]) -> map[Binding[S, A], Binding[S, B]] (\(v: Binding[S, A]) -> (v._1, (f v._2))) (p input);
 \end{lstlisting}
 What is more, \textbf{<@} can also be applied during the parsing process and in this way we can introduce some semantic functions into our parsers.
 
 Additionally, we also extend the \textbf{$\sim$} function into two new functions that ignore either the first parser's result or the last parser's one. These two parsers are defined as below.
 \begin{lstlisting}
-  let (<~)[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]): Parser[S, A] =
+let (<~)[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]): Parser[S, A] =
 	p ~[S, A, B] q <@[S, (A, B), A] (\(v: (A, B)) -> v._1);
-  let (~>)[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]): Parser[S, B] =
+let (~>)[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]): Parser[S, B] =
 	p ~[S, A, B] q <@[S, (A, B), B] (\(v: (A, B)) -> v._2);
 \end{lstlisting}
 With these transformers, one can conveniently build a parser for a context free language. However, we can introduce more advanced combinators on the basis of the provided combinators and transformers. These advanced combinators is to introduce in the next section.
@@ -94,12 +94,12 @@ With these transformers, one can conveniently build a parser for a context free 
 \section{Advanced Combinators}
 The first parser we are to introduce is \textbf{many}. This parser accepts another parser and continuously applies this parser on the input. With the given transformers, now we can easily define our repetition parser and its extension \textbf{many1} as follows.
 \begin{lstlisting}
-  let rec many[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
+let rec many[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
 	\(input: PolyList[S]) ->
 		((p ~[S, R, PolyList[R]] (many[S, R] p)) 
 		<@[S, (R, PolyList[R]), PolyList[R]] (\(v: (R, PolyList[R])) -> Cons[R] v._1 v._2)
 		<|>[S, PolyList[R]] (succeed[S, PolyList[R]] (Nil[R]))) input;
-  let many1[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
+let many1[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
 	\(input: PolyList[S]) ->
 		(p ~[S, R, PolyList[R]] (many[S, R] p)
 		<@[S, (R, PolyList[R]), PolyList[R]] (\(v: (R, PolyList[R])) -> Cons[R] v._1 v._2)) input;
@@ -108,7 +108,7 @@ The difference between \textbf{many} and \textbf{many1} is that the latter one d
 
 Another combinator, called \textbf{option}, is used to generate a result containing one or zero element, depending on whether it has successfully parsed a symbol or not. This combinator is defined as below.
 \begin{lstlisting}
-  let option[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
+let option[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
 	p <@[S, R, PolyList[R]] (\(v: R) -> createList[R] v)
 	<|>[S, PolyList[R]] (succeed[S, PolyList[R]] (Nil[R]));
 \end{lstlisting}
@@ -116,42 +116,42 @@ Further, we define a series of combinators parsing digits, characters, parenthes
 
 When considering a situation under which we need to parse a series of tokens separated by some symbols, like commas and semicolons. Thus, we define a combinator \textbf{listOf} to accomplish it.
 \begin{lstlisting}
- let listOf[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]): Parser[S, PolyList[A]] =
+let listOf[S, A, B] (p: Parser[S, A]) (q: Parser[S, B]): Parser[S, PolyList[A]] =
 	p <~>[S, A] (many[S, A] (q ~>[S, B, A] p)) <|>[S, PolyList[A]] (succeed[S, PolyList[A]] (Nil[A]));
 \end{lstlisting}
 A more complicated situation is that the separator itself also contains semantic meanings. As a result, we define two combinators called \textbf{chainr} and \textbf{chainl} which combine parse trees using the operation defined in the separator either from right to left or from left to right. To implement it, we need two helper functions called \textbf{foldr} and \textbf{foldl} respectively. These two helper functions and combinators are as below.
 \begin{lstlisting}
-  let rec foldr[A, B] (f: A -> B -> B) (x: B) (xs: PolyList[A]): B =
+let rec foldr[A, B] (f: A -> B -> B) (x: B) (xs: PolyList[A]): B =
 	case last[A] xs of
 		Nothing -> x
 	|	Just a  -> foldr[A, B] f (f a x) (take[A] ((size[A] xs) - 1) xs);
-  let rec foldl[A, B] (f: B -> A -> B) (x: B) (xs: PolyList[A]): B =
+let rec foldl[A, B] (f: B -> A -> B) (x: B) (xs: PolyList[A]): B =
 	case xs of
 		Nil 	  -> x
 	|	Cons a as -> foldl[A, B] f (f x a) as;
-  let chainr[S, A] (p: Parser[S, A]) (q: Parser[S, (A -> A -> A)]): Parser[S, A] =
+let chainr[S, A] (p: Parser[S, A]) (q: Parser[S, (A -> A -> A)]): Parser[S, A] =
 	many[S, (A, (A -> A -> A))] (p ~[S, A, (A -> A -> A)] q) ~[S, PolyList[(A, (A -> A -> A))], A] p
 	<@[S, (PolyList[(A, (A -> A -> A))], A), A] uncurry[PolyList[(A, A -> A -> A)], A, A] (flip[A, PolyList[(A, A -> A -> A)], A] (foldr[(A, A -> A -> A), A] (ap1[A])));
-  let chainl[S, A] (p: Parser[S, A]) (q: Parser[S, (A -> A -> A)]): Parser[S, A] =
+let chainl[S, A] (p: Parser[S, A]) (q: Parser[S, (A -> A -> A)]): Parser[S, A] =
 	p ~[S, A, PolyList[((A -> A -> A), A)]] (many[S, ((A -> A -> A), A)] (q ~[S, (A -> A -> A), A] p))
 	<@[S, (A, PolyList[((A -> A -> A), A)]), A] uncurry[A, PolyList[((A -> A -> A), A)], A] (foldl[((A -> A -> A), A), A] (flip[((A -> A -> A), A), A, A] (ap2[A])));
 \end{lstlisting}
 What is more, we may also need to analyse a situation with two options and generate a result according to the matching one. This can be done by combining \textbf{<@} and \textbf{option} combinators. As this is a common situation in the real parsing world, we define a new combinator denoted with \textbf{<?@} to handle with it. The function is as below.
 \begin{lstlisting}
-  let (<?@)[S, A, R] (p: Parser[S, PolyList[A]]) (t: (R, A -> R)): Parser[S, R] =
+let (<?@)[S, A, R] (p: Parser[S, PolyList[A]]) (t: (R, A -> R)): Parser[S, R] =
 	p <@[S, PolyList[A], R] (\(v: PolyList[A]) -> case v of
-														Nil 	  -> t._1
-												|		Cons x xs -> t._2 x);
+			    Nil 	  -> t._1
+		|		Cons x xs -> t._2 x);
 \end{lstlisting}
 Based on these advanced combinators, we define more practical combinators to ease parsing tasks, such as a parser that deals with natural numbers.
 
 However, when combining the parser \textbf{many} and \textbf{option} on an input, there may be lots of backtracking possibilities introduced. This may become a trouble when we want to parse a series of input as a whole. Thus, we define a combinator \textbf{greedy} which takes all parsing results or nothing. This combinator is constructed on the basis of another combinator called \textbf{firstResult} which, as is suggested by its name, picks out the first parsing result all the time. These two combinators are listed as below.
 \begin{lstlisting}
-  let firstResult[S, A] (p: Parser[S, A]): Parser[S, A] =
+let firstResult[S, A] (p: Parser[S, A]): Parser[S, A] =
 	\(input: PolyList[S]) -> case p input of
 								Nil 	  -> Nil[Binding[S, A]]
 							|	Cons x xs -> createList[Binding[S, A]] x;
-  let greedy[S, A] (p: Parser[S, A]): Parser[S, PolyList[A]] = firstResult[S, PolyList[A]] (many[S, A] p);
+let greedy[S, A] (p: Parser[S, A]): Parser[S, PolyList[A]] = firstResult[S, PolyList[A]] (many[S, A] p);
 \end{lstlisting}
 Now we have already had a relatively complete parser combinator library. In the next chapter, we will build a simple arithmetic parser based on the existing library to show how it works.
 
@@ -160,7 +160,7 @@ This section demonstrates an arithmetical expression and its generalized version
 
 An arithmetical expression can be constructed by an integer (we do not consider any floating numbers here), a variable, a function call and several operators with predefined priorities. This data structure can be described as follows.
 \begin{lstlisting}
-  data Expr = Con Int
+data Expr = Con Int
 		|	Var CharList
 		|	Fun CharList PolyList[Expr]
 		|	Add Expr Expr
@@ -171,7 +171,7 @@ An arithmetical expression can be constructed by an integer (we do not consider 
 This grammar can be split into two components. The first one is \textbf{factor} which contains a constant, a variable, a function call or an expression and is separated by '*' or '/'.  The second one is \textbf{term} which contains \textbf{factors} and is separated by '+' or '-'.
 To parse this grammar, we will define three combinators by combining the existing combinators in our library. The first combinator is called \textbf{fact} which designed to parse a factor. The second combinator is called \textbf{term} that is to parse a term. The third combinator is \textbf{expr} that parses the expression as a whole. These three parsers are shown as below.
 \begin{lstlisting}
-  let rec fact: Parser[Char, Expr] =
+let rec fact: Parser[Char, Expr] =
 	(integer <@[Char, Int, Expr] (\(v: Int) -> Con v))
 	<|>[Char, Expr] ((identifier 
 		~[Char, CharList, (CharList -> Expr)]
@@ -186,7 +186,7 @@ and expr: Parser[Char, Expr] = chainr[Char, Expr] term (symbol '+' <@[Char, Char
 \end{lstlisting}
 Now we can just use \textbf{expr} to parse the arithmetic expressions. However, this combinator only suites for expressions with '+', '-', '*', '/' operations. To generalize it, we can define a parser that can parse any expressions containing any predefined operations with different priorities. This task is relatively easy thanks to the combinators in the library. We firstly define an operation type \textbf{Op} which is a tuple that contains a symbol of operation and its behaviour. Then we define a combinator \textbf{gen} that accepts such operations and a parser, and applies the operation on the parsing result. By using \textbf{gen}, we can change our arithmetical expression parser into the below format with some helper combinators introduced.
 \begin{lstlisting}
-  type Op[A] = (Char, A -> A -> A);
+type Op[A] = (Char, A -> A -> A);
 let gen[A] (ops: PolyList[Op[A]]) (p: Parser[Char, A]): Parser[Char, A] =
 	chainr[Char, A] p (choice[Char, (A -> A -> A)] 
 		(map[Op[A], Parser[Char, (A -> A -> A)]] 
@@ -201,8 +201,47 @@ The parser \textbf{expr1} does the same thing as \textbf{expr} but this way it i
 \section{Self Application}
 As for a given string that follows BNF grammar, we can build a parser to parse all this kinds of strings. Things we need to do are firstly defining a type to associate variables under certain environment and implementing combinators that parse different components of a BNF string.
 
-First things first. We define a type called \textbf{Env} as a series of tuples with the first element denoting a key and the second one its value. 
+First things first. We define a type called \textbf{Env} as a series of tuples with the first element denoting a key and the second one its value. To bind a variable and its value, we use a helper function called \textbf{assoc}. And to apply some operations on all variables in an environment, we define a \textbf{mapenv} to realize it. These implementations are listed below.
+\begin{lstlisting}
+  type Env[A, B] = PolyList[(A, B)];
+  let rec assoc[D] (env: Env[Symbol, D]) (s: Symbol) (default: D): D =
+	case env of
+		Nil       -> default
+	|	Cons e es -> if (e._1 <==> s) then e._2 else (assoc[D] es s default);
+  let rec mapenv[S, A, B] (f: A -> B) (env: Env[S, A]): Env[S, B] =
+	case env of
+		Nil       -> Nil[(S, B)]
+	|	Cons e es -> Cons[(S, B)] (e._1, f e._2) (mapenv[S, A, B] f es);
+\end{lstlisting}
+BNF grammar contains either terminal words or non-terminal words. By abstracting it, we use a data type \textbf{Symbol} to represent it. The right hand side of the production rule must be a series of possibilities, each of which is a list of symbols. Hence, the grammar \textbf{Gram} can be represented as below.
+\begin{lstlisting}
+  data Symbol = Term CharList
+			| Nont CharList;
+  type Alt = PolyList[Symbol];
+  type Rhs = PolyList[Alt];
+  type Gram = Env[Symbol, Rhs];
+\end{lstlisting}
+Based on these types, now we can build a parser \textbf{bnf} to parse a BNF string by combining combinators in the library together.
+\begin{lstlisting}
+let bnfTerm (termp: Parser[Char, CharList]): Parser[Char, Symbol] =
+	sp[CharList] termp <@[Char, CharList, Symbol] (\(cs: CharList) -> Term cs);
+let bnfNont (nontp: Parser[Char, CharList]): Parser[Char, Symbol] =
+	sp[CharList] nontp <@[Char, CharList, Symbol] (\(cs: CharList) -> Nont cs);
+let alt (termp: Parser[Char, CharList]) (nontp: Parser[Char, CharList]): Parser[Char, Alt] =
+	many[Char, Symbol] (bnfTerm termp <|>[Char, Symbol] (bnfNont nontp));
+let rhs (termp: Parser[Char, CharList]) (nontp: Parser[Char, CharList]): Parser[Char, Rhs] =
+	listOf[Char, Alt, Char] (alt termp nontp) (sp[Char] (symbol '|'));
+let rule (termp: Parser[Char, CharList]) (nontp: Parser[Char, CharList]): Parser[Char, (Symbol, Rhs)] =
+	(bnfNont nontp) ~[Char, Symbol, Rhs]
+		(sp[CharList] (token (readPolyList "::=")) ~>[Char, CharList, Rhs] (rhs termp nontp) <~[Char, Rhs, Char] (sp[Char] (symbol '.')));
+let bnf (nontp: Parser[Char, CharList]) (termp: Parser[Char, CharList]): Parser[Char, Gram] =
+	many[Char, (Symbol, Rhs)] (rule termp nontp);
+\end{lstlisting}
+Now given a BNF string, we are potentially available to build our own parse tree with parser \textbf{bnf}. But before that, we need to define a new parse tree for generic application. This data type is called \textbf{GramTree}, a multi-branching tree.
+\begin{lstlisting}
+  data GramTree = Node Symbol (PolyList[GramTree]);
+\end{lstlisting}
 
-Up to now, we have implemented a recursive descent parser with our library. But there is a problem that each time the parser fails, it will backtrack from the beginning and re-parse with another alternative. This can significantly slow down the parsing efficiency. To solve it, we have explored packrat parsing technique and introduced it in the next section.
+Up to now, we have implemented recursive descent parsers with our library. But there is a problem that each time the parser fails, it will backtrack from the beginning and re-parse with another alternative. This can significantly slow down the parsing efficiency. To solve it, we have explored packrat parsing technique and introduced it in the next section.
 
 \section{Packrat Parsing}
