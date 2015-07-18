@@ -1069,10 +1069,12 @@ It is easy to interpret the result, because it's structure just like the input F
 
 \section{Pretty Printer}
 
-All the case studies in \textbf{Pretty Printer} share the same ADT definition of the case studies in Section\ref{section:mparser} for further integration.
+All the case studies in \textbf{Pretty Printer} share the same ADT definition of the case studies in Section \ref{section:mparser} for further integration.
 
 \subsection{Tree Printer}
+
 "There is no poem as lovely as a tree" -- Joyce Kilmer
+
 \subsubsection{Implementation}
 
 The first case study we did for all our pretty printer libraries is tree. And it's defined as:
@@ -1081,7 +1083,7 @@ The first case study we did for all our pretty printer libraries is tree. And it
 data BTree = Node String PList[BTree];
 \end{lstlisting}
 
-As discussed in Section\ref{section:printer}. Our library provides several basic combinators:
+As discussed in Section \ref{section:printer}. Our library provides several basic combinators:
 
 \begin{itemize}
 \item text:    for printing string
@@ -1167,7 +1169,7 @@ aaa[ bbb[ ee, ff ], cc, dd ]
 \subsection{Simple Arithmetic Expression Printer}
 
 \subsubsection{Implementation}
-The ADT of a arithmetic expression is defined as Section\ref{section:simple_arith_expr_parser}.
+The ADT of a arithmetic expression is defined as Section \ref{section:simple_arith_expr_parser}.
 \begin{lstlisting}
 data ArithExpr = Add ArithExpr ArithExpr
             |    Sub ArithExpr ArithExpr
@@ -1208,8 +1210,16 @@ showArithExpr (expr: ArithExpr): Doc =
 Let's just try a long test case to see whether the printer outputs the correct parentheses.
 
 \begin{lstlisting}
-let expr= Mul (Add (Sub (Integer 1) (Integer 2)) (Div (Integer 3) (Integer 4)))
-          (Sub (Mul (Add (Integer 5) (Integer 6)) (Integer 7)) (Integer 8))
+let expr= Mul (Add
+                (Sub (Integer 1) (Integer 2))
+                (Div (Integer 3) (Integer 4))
+              )
+              (Sub
+                (Mul
+                  (Add (Integer 5) (Integer 6))
+                  (Integer 7))
+                (Integer 8)
+              )
 ;
 \end{lstlisting}
 
@@ -1222,7 +1232,7 @@ Result:
 \subsection{XML Printer}
 
 \subsubsection{Implementation}
-The ADT of a XML document is defined as Section\ref{section:xml_parser}.
+The ADT of a XML document is defined as Section \ref{section:xml_parser}.
 
 \begin{lstlisting}
 data XMLNode = XMLText      String
@@ -1234,12 +1244,13 @@ data XMLNode = XMLText      String
 ;
 \end{lstlisting}
 
-Then the pretty printer of XML can be easily wrote:
+Then the pretty printer of XML can be wrote:
 
 \begin{lstlisting}
 let quoted (s: String): String=
     "\"".concat(s.concat("\""))
 ;
+
 let rec showXML (xml: XMLNode): Doc=
     case xml of
         XMLText s        -> text s
@@ -1314,10 +1325,10 @@ We get the output:
 \subsection{Feather Weight Java Printer}
 
 \subsubsection{Implementation}
-The ADT of a Feather Weight Java document is defined as Section\ref{section:fj_parser}.
+The ADT of a Feather Weight Java document is defined as Section \ref{section:fj_parser}.
 
 
-Then the pretty printer of Feather Weight Java can be easily wrote(only main printer is showed):
+Then the pretty printer of Feather Weight Java can be wrote(only main printer is showed):
 
 \begin{lstlisting}
 showFJClass (class : FJClass) : Doc =
@@ -1432,55 +1443,55 @@ Class A extends B
 
 
 \subsubsection{Implementation}
-The ADT of a F2J document is defined as Section\ref{section:f2j_parser}.
+The ADT of a F2J document is defined as Section \ref{section:f2j_parser}.
 
 Then the main pretty printer of F2J can be wrote:
 \begin{lstlisting}
 showF2JExpr (expr: F2JExpr): Doc=
 case expr of
-        F2JApplication f2jexpr apparm
-    -> text "(" <> showF2JExpr f2jexpr <> text " " <>
-    showF2JApplicationParam apparm <> text ")"
-    |   F2JLet bindingbodys f2jexpr
-    -> text "let " <> showF2JBindingBodys bindingbodys <>
-    line <> text ";" <> line <> showF2JExpr f2jexpr
-    |   F2JLetRec bindingbodys f2jexpr
-    -> text "let rec " <> showF2JBindingBodys bindingbodys <>
-    line <> text ";" <> line <> showF2JExpr f2jexpr
-    |   F2JLambda bindingparams f2jexpr
-    -> text "\\" <> showF2JBindingParams bindingparams <> text " -> " <>
-    showF2JExpr f2jexpr
-    |   F2JCase f2jexpr casealternatives
-    -> text "case " <> showF2JExpr f2jexpr <> text " of" <>
-    line <> (showF2JCaseAlternatives casealternatives
-    (lengOfF2JCaseAlternatives casealternatives))
-    |   F2JADT f2jadtbodys f2jexpr
-    -> text "data " <> (showF2JADTBodys f2jadtbodys 7) <>
-    line <> text ";" <> line <> showF2JExpr f2jexpr
-    |   F2JRecADT f2jadtbodys f2jexpr
-    -> text "data rec " <> (showF2JADTBodys f2jadtbodys 11) <>
-    line <> text ";" <> line <> showF2JExpr f2jexpr
-    |   F2JTypeAlias type1 type2 f2jexpr
-    -> text "type " <> showF2JType type1 <> text "= " <>
-    showF2JType type2 <> showF2JExpr f2jexpr
-    |   F2JPair exprs
-    -> showF2JExprs exprs
-    |   F2JIntLiteral s
-    -> text s
-    |   F2JStringLiteral s
-    -> text s
-    |   F2JVariable v
-    -> text v
-    |   F2JBlock exprs
-    -> text "{" <> line <> showF2JExprs exprs <> line <> text "}"
-    |   F2JRecord recorditems
-    -> showF2JRecordItems recorditems
+      F2JApplication f2jexpr apparm
+  -> text "(" <> showF2JExpr f2jexpr <> text " " <>
+     showF2JApplicationParam apparm <> text ")"
+  |   F2JLet bindingbodys f2jexpr
+  -> text "let " <> showF2JBindingBodys bindingbodys <>
+     line <> text ";" <> line <> showF2JExpr f2jexpr
+  |   F2JLetRec bindingbodys f2jexpr
+  -> text "let rec " <> showF2JBindingBodys bindingbodys <>
+     line <> text ";" <> line <> showF2JExpr f2jexpr
+  |   F2JLambda bindingparams f2jexpr
+  -> text "\\" <> showF2JBindingParams bindingparams <> text " -> " <>
+     showF2JExpr f2jexpr
+  |   F2JCase f2jexpr casealternatives
+  -> text "case " <> showF2JExpr f2jexpr <> text " of" <>
+     line <> (showF2JCaseAlternatives casealternatives
+     (lengOfF2JCaseAlternatives casealternatives))
+  |   F2JADT f2jadtbodys f2jexpr
+  -> text "data " <> (showF2JADTBodys f2jadtbodys 7) <>
+     line <> text ";" <> line <> showF2JExpr f2jexpr
+  |   F2JRecADT f2jadtbodys f2jexpr
+  -> text "data rec " <> (showF2JADTBodys f2jadtbodys 11) <>
+     line <> text ";" <> line <> showF2JExpr f2jexpr
+  |   F2JTypeAlias type1 type2 f2jexpr
+  -> text "type " <> showF2JType type1 <> text "= " <>
+     showF2JType type2 <> showF2JExpr f2jexpr
+  |   F2JPair exprs
+  -> showF2JExprs exprs
+  |   F2JIntLiteral s
+  -> text s
+  |   F2JStringLiteral s
+  -> text s
+  |   F2JVariable v
+  -> text v
+  |   F2JBlock exprs
+  -> text "{" <> line <> showF2JExprs exprs <> line <> text "}"
+  |   F2JRecord recorditems
+  -> showF2JRecordItems recorditems
 ;
 \end{lstlisting}
 
 \subsubsection{Test}
 
-For F2J, we use unit tests, since the language is much more complex.
+For F2J, we use unit tests, since the language is much more complex than all the case studies we have done.
 
 \begin{lstlisting}
 let tests=  (testF2JExprFull            +>[TestFn]

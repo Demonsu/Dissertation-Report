@@ -3,7 +3,7 @@ This chapter mainly focuses on the implementation details of a pretty printer co
 
 \section{Introduction}
 
-A pretty printer's job is to lay out structured data in a human-friendly way. Take a simple example, a tree of type.
+A pretty printer's job is to display structured data in a human-friendly way. Take a simple example, a tree of type.
 
 \begin{lstlisting}
 data Tree = Node String List[Tree];
@@ -25,8 +25,10 @@ text "aaa" <> (nest 2 (line <> text "bbb"))
 
 Choosing appropriate layout and converting it into a string at the end are also done by the library. And more specifically, the library should choose a layout which occupies a minimal number of lines(with line width's constraint) while retaining indentation that reflects the underlying structure information.
 
-\emph{Remark}
-Note that we are considering the problem of displaying internal data structure into a human-readable form, not improving a layout of an existing text. And surely, we are not going to compete with typesetting systems(such as TEX). However, our library is to strike a balance between sophistication, ease of use and optimality of output.
+\begin{remark}
+Note that we are considering the problem of displaying internal structures into a human-readable form, not improving an existing text's layout. And surely, we are not going to compete with typesetting systems(such as TEX). Instead, our library is to strike a balance between sophistication, and optimality of output.
+\end{remark}
+
 
 
 \section{A Bridge between Data Structure and Layout}
@@ -42,13 +44,15 @@ Data Doc = NIL
 ;
 \end{lstlisting}
 
-\emph{Remark} Since infix constructors are not supported in F2J. Please be noted that "TEXT" and "LINE" are represented in prefix form.
+\begin{remark}
+Since infix constructors are not supported in F2J. Please be noted that "TEXT" and "LINE" are represented in prefix form.
+\end{remark}
 
-A pretty-printer will be a function mapping any value to the \textit{Doc} above. And from the definition of the \textit{Doc}, we can see that itself has indentations and line breaks which means the \textit{Doc} knows how to lay itself out prettily. Apparently, some high level combinators should also be offered to users, such as \textit{nest} for generating nested indentations and \textit{showDoc} for converting \textit{Doc} into a string.
+A pretty-printer will be a function mapping any value to the \texttt{Doc} above. And from the definition of the \texttt{Doc}, we can see that itself has indentations and line breaks which means the \texttt{Doc} knows how to lay itself out prettily. Apparently, some high level combinators should also be offered to users, such as \texttt{nest} for generating nested indentations and \texttt{showDoc} for converting \texttt{Doc} into a string.
 
 \section{A Primitive Pretty Printer}
 
-To begin, we consider the simple case when we just use a naive \textit{Doc}, which means each document will only have one possible layout. To form a library, six high level operators are defined together with it:
+To begin, we consider the simple case when we just use a naive \texttt{Doc}, which means each document will only have one possible layout. To form a library, six high level operators are defined together with it:
 
 \begin{lstlisting}
 let nil = NIL
@@ -59,7 +63,7 @@ let line: Doc
 let showDoc(x: Doc): String
 \end{lstlisting}
 
-Here \textbf{<>} is for concatenating two documents. The function \textbf{text} converts a string to the \textit{Doc} and the \textbf{line} denotes a line break. The function \textbf{nest} adds indentation to every new line of the following documents. Finally, the function \textbf{showDoc} converts the \textit{Doc} to a string. Again, take the tree example:
+Here \texttt{<>} is for concatenating two documents. The function \texttt{text} converts a string to the \texttt{Doc} and the \texttt{line} denotes a line break. The function \texttt{nest} adds indentation to every new line of the following documents. Finally, the function \texttt{showDoc} converts the \texttt{Doc} to a string. Again, take the tree example:
 
 \begin{lstlisting}
 
@@ -81,7 +85,7 @@ aaa[
 ]
 \end{lstlisting}
 
-The result is just a string containing "\verb|\|n" and " ". What the pretty-printer need to do is to use the six operators we provide above to describe the final result. In here, it's the function which converts a tree to a document.
+The result is just a string containing "\verb|\|n" and " ". What the pretty printer need to do is to use the six operators we provide above to describe the final result. In here, it's the function which converts a tree to a document.
 
 \begin{lstlisting}
 let rec showTree (tree: Tree): Doc=
@@ -123,7 +127,7 @@ nest 2 line <> text "eee," <>
 nest 2 line <> text "fff" <>
 nest 0 line <> text "]"
 \end{lstlisting}
-Now, the document above is in a normal form which means final layout is easy to get from it. Then the problem focuses on how to derive representations for each function(high level operators). Since each document has only one possible layout, all the operators here should be linear, which means rules can be derived from the definition of these operators directly.
+Now, the document above is in a normal form which can be easily printed to a string. Then the problem focuses on how to derive representations for each function(high level operators). Since each document has only one possible layout, all the operators here should be linear, which means rules can be derived from the definition of these operators directly.
 \begin{lstlisting}
 let nil = NIL
 ;
@@ -182,7 +186,7 @@ If the maximum line width is 100 which means there is no limit in this case, the
 aaa[ bbb[ ee, ff ], cc, dd ]
 \end{lstlisting}
 
-And if the maximum line width is 20, then the tree should be printed as followed. Because the length of node("bbb")'s children is less than 20, while length of node("aaa")'s is too long to fit into one line.
+And if the maximum line width is 20, then the tree should be printed as followed. Because the length of \texttt{node("bbb")}'s children is less than 20, while length of \texttt{node("aaa")}'s is too long to fit into one line.
 \begin{lstlisting}
 aaa[
     bbb[ ee, ff ],
@@ -205,7 +209,7 @@ This extension is achieved by adding a new high level operator:
 let group (d: Doc): Doc
 \end{lstlisting}
 
-The function group accepts a set of layouts and then returns the set with a new layout added, which everything in the new layout is compressed on one line. That means people can use this interface to tell the library where to compress the line breaks.
+The function \texttt{group} accepts a set of layouts and then returns the set with a new layout added, which everything in the new layout is compressed on one line. That means people can use this interface to tell the library where to compress the line breaks.
 For example:
 \begin{lstlisting}
 group (
@@ -223,14 +227,14 @@ hkuplg a b c    hkuplg a b  hkuplg a    hkuplg
                                         c
 \end{lstlisting}
 
-To formalize the semantic of group, two auxiliary operators are added.
+To formalize the semantic of \texttt{group}, two auxiliary operators are added.
 \begin{lstlisting}
 let (<|>) (x: Doc) (y: Doc): Doc
 
 let flatten (d: Doc): Doc
 \end{lstlisting}
 
-The \textbf{<|>} operator represents a union of two layouts. The \textbf{flatten} operator replaces each line break in a layout by a single space. Then a document will always represent a set of layouts where all the layouts in the set flatten to the same one. With \textbf{<|>} and \textbf{flatten}, group can be defined as:
+The \texttt{<|>} operator represents a union of two layouts. The \texttt{flatten} operator replaces each line break in a layout by a single space. Then a document will always represent a set of layouts where all the layouts in the set flatten to the same one. With \texttt{<|>} and \texttt{flatten}, group can be defined as:
 \begin{lstlisting}
 let (<|>) (x: Doc) (y: Doc) : Doc =
     UNION x y
@@ -262,14 +266,14 @@ flatten line            = text " "
 flatten (nest i x)      = flatten x
 \end{lstlisting}
 
-Next, how to choose the best layout among the set? Following the method in Hughes' paper\cite{hughes1995design} which specify an ordering relation between lines, it can be done by specifying an ordering relation between documents. Given two lines a,b (a<b) and the available width w.
+Next, how to choose the best layout among the set? Following the method in Hughes' paper\cite{hughes1995design} which specifies an ordering relation between lines, it can be done by specifying an ordering relation between documents. Given two lines a,b (a<b) and the available width w.
 \begin{lstlisting}
 if (b<w)            then b
 if (a<w) & (b>w)    then a
 if (a>w)            then a
 \end{lstlisting}
 
-And in practice, it's done by a function best, which kills all the unions in a document. Additionally, it requires another two parameters: one is the line width w, and the second is spaces k which already occupied on the current line.
+And in practice, it's done by a function \texttt{best}, which kills all the unions in a document. Additionally, it requires another two parameters: one is the line width \texttt{w}, and the second indicates the number of spaces \texttt{k} that already occupied on the current line.
 \begin{lstlisting}
 -- judge whther the doc fit the line width
 let rec fits (w: Int) (d: Doc): Bool=
@@ -305,7 +309,7 @@ Finally, to pretty print a document is just to show the best.
 
 \section{Improving Efficiency}
 
-At first glance, the above implements require time \textit{O(n)}, where \textit{n} is the document's length plus all the count of operators(\textbf{nil, <>, nest, text, line, group}). However, there are two operators slow down the library a lot in time \textit{O($n^2$)}. First, take a look at the function \textbf{nest}:
+At first glance, the above implements require time \textit{O(n)}, where \textit{n} is the document's length plus all the count of operators(\texttt{nil}, \texttt{<>}, \texttt{nest}, \texttt{text}, \texttt{line}, \texttt{group}). However, there are two operators slow down the library a lot in time \textit{O($n^2$)}. First, take a look at the function \texttt{nest}:
 \begin{lstlisting}
 let rec nest (i: Int) (x: Doc): Doc =
     case x of
@@ -314,19 +318,23 @@ let rec nest (i: Int) (x: Doc): Doc =
         |   NIL         -> NIL
 ;
 \end{lstlisting}
-For a single nest, it takes \textit{O(n)} to process:
+
+For a single nest operation, it takes \textit{O(n)} to process:
 \begin{lstlisting}
 nest i ((text s0) <> (text s1)<> (text s2))
 
+Steps:
 TEXT s0 nest i ((text s1) <> (text s2))
 TEXT s0 TEXT s1 nest i (text s2)
 TEXT s0 TEXT s1 TEXT s2
 \end{lstlisting}
-When it comes to a nested nest:
+
+So it will take \textit{O($n^2$)} for a nested one. It's quite inefficient for processing a document.
 \begin{lstlisting}
 nest i0 ((text s0) <> nest i1 ((text s1) <> nest i2 (text s2)))
 \end{lstlisting}
-It will take \textit{O($n^2$)}. It's quite inefficient for processing a document. And furthermore, when processing a concatenation of documents, it might pile up to the left:
+
+Seond, when processing a concatenation of documents, it might pile up to the left:
 \begin{lstlisting}
 let rec (<>) (x: Doc) (y: Doc): Doc =
     case x of
@@ -348,8 +356,8 @@ TEXT s0 (TEXT s1 (TEXT s2 (text s3)))
 TEXT s0 TEXT s1 TEXT s2 TEXT s3 NIL
 \end{lstlisting}
 
-A solution for the first problem is to add an explicit data construct in \textit{Doc}, and maintain an indentation when nestings are processed. Then the operator \textbf{nest} will be linear. And the solution for the second problem is very obvious, we can add another explicit data construct for concatenation and modify all
-the operators to act on a list of documents. Now, the \textit{Doc} is as follows:
+A solution for the first problem is to add an explicit data construct in \texttt{Doc}, and maintain an indentation when nestings are processed. Then the operator \texttt{nest} will be linear. And the solution for the second problem is very obvious, we can add another explicit data construct for concatenation and modify all
+the operators to act on a list of documents. Now, the \texttt{Doc} is as follows:
 \begin{lstlisting}
 data Doc =  NIL
         |   TEXT String
@@ -364,6 +372,7 @@ data DList[A] = DNil
               | DCons A (DList[A])
 ;
 \end{lstlisting}
+
 And the function \textbf{<>} and \textbf{nest} will then be quite simple:
 \begin{lstlisting}
 let (<>) (x: Doc) (y: Doc) : Doc =
@@ -374,14 +383,16 @@ let nest (i: Int) (x: Doc): Doc =
     NEST i x
 ;
 \end{lstlisting}
-However, life will never be easy for all the people. At the same time the function \textbf{<>} and \textbf{nest} are getting easier, there must be someone to handle all the dirty work for them. That's the function \textbf{best}, it now not only needs to choose a best layout from union documents, but also should maintain the indentation for nesting, and what now it deals with is a document list. And furthermore, for not changing the function \textbf{better}, \textbf{fits} and \textbf{showDoc}, it's also expected to generate the naive \textit{Doc} for converting to string. For identical from the \textit{Doc} now, the naive, easy-to-print \textit{Doc} now changes to:
+
+However, life will never be easy for all the people. At the same time the function \texttt{<>} and \texttt{nest} are getting easier, there must be someone to handle all the dirty work for them. That's the function \texttt{best}, it now not only needs to choose a best layout from union documents, but also should maintain the indentation for nesting, and what now it deals with is a document list. And furthermore, for not changing the function \texttt{better}, \texttt{fits} and \texttt{showDoc}, it's also expected to generate the naive \texttt{Doc} for converting to string. For identical from the \texttt{Doc} now, the naive, easy-to-print \texttt{Doc} now changes to:
 \begin{lstlisting}
 data PDoc = NI
         |   TE String PDoc
         |   LI Int PDoc
 ;
 \end{lstlisting}
-Finally, let's take a look at \textbf{best}
+
+Finally, let's take a look at \texttt{best}.
 
 
 \begin{lstlisting}
@@ -409,7 +420,7 @@ let best (w: Int) (k: Int) (d: Doc): PDoc =
 ;
 \end{lstlisting}
 
-The improvement of efficiency should not stay in theory, several experiments are more persuasive. Considering some features of F2J, it will always compile before run. And it takes seconds for compilation, which brings too much deviation for analysis. So we need hack a bit into the language. As the language is hosted by JVM, we can just compile the F2J into java classes, then use "JAVA" command to run the object code. Although the loading time of JVM still causes some deviation, at least they compete on a level playing field. Take a look at the test code:
+The analysis of efficiency should not stay only in theory, with several experiments will be more persuasive. Considering some features of F2J, it will always compile before run. And it takes seconds for compilation, which brings too much deviation for analysis. So we need hack a bit into the language. As the language is hosted by JVM, we can just compile the F2J into java classes, then use "\texttt{JAVA}" command to run the object code. Although the loading time of JVM still causes some deviation, at least they compete on a level playing field. Take a look at the test code:
 \begin{lstlisting}
 let rec looptext (x: Int) : Doc =
     if x > 0 then
@@ -420,14 +431,14 @@ let rec looptext (x: Int) : Doc =
 pretty 30 (looptext 200)
 \end{lstlisting}
 
-The test code will generate as many nested texts as you want. However, as F2J is a language for academic use, the max count we can hit is 500. Otherwise, either the compiler or the runtime will crash in ways you can't imagine. We use Linux command "time" for evaluating. Raw data is collected in Figure \ref{fig:efficiency comparation}:
+The test code will generate as many nested texts as you want. However, as F2J is a language for academic use, the max count we can hit is 500. Otherwise, either the compiler or the runtime will crash. We use Linux command "\texttt{time}" for evaluating. Raw data is collected in Figure \ref{fig:efficiency comparation}.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.7\textwidth]{imgs/raw_data}
     \caption{Raw Data}
     \label{fig:efficiency comparation}
 \end{figure}
-And we draw the raw data into a line chart(Figure \ref{fig:efficiency line chart}), the red one represents the library with efficiency improvement. The x-axis shows how many nested concatenations there are, count in hundreds. And the y-axis shows how much time it takes, count in seconds.
+And we draw the raw data into a line chart(Figure \ref{fig:efficiency line chart}). The x-axis shows how many nested concatenations there are, count in hundreds. And the y-axis shows how much time it takes, count in seconds. As expected, the lower one represents the library with efficiency improvement.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.7\textwidth]{imgs/compare}
