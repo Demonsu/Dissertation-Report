@@ -1104,15 +1104,20 @@ Then a printer for the tree can be wrote:
 
 \begin{lstlisting}
 let rec showTree (tree: BTree): Doc=
+
     case tree of
             Node x xs   -> (text x) <> (showBracket xs)
+            
 and
 showBracket (tree: PList[BTree]): Doc=
+
     case tree of
             Nil         -> nil
         |   Cons x xs   -> bracket "[" (showTrees (x +>[BTree] xs)) "]"
+        
 and
 showTrees (tree: PList[BTree]): Doc=
+
     case tree of
             Nil         -> nil
         |   Cons x xs   ->
@@ -1185,7 +1190,7 @@ It looks quite straight forward. However, it misses a piece of important informa
 let rec braketExpr (expr: ArithExpr): Doc =
 
     (text "(") <> (showArithExpr expr) <> (text ")")
-
+    
 and
 isAddSub (expr: ArithExpr): Doc =
 
@@ -1193,15 +1198,19 @@ isAddSub (expr: ArithExpr): Doc =
             Add _ _     ->  braketExpr expr
         |   Sub _ _     ->  braketExpr expr
         |   _           ->  showArithExpr expr
-
+        
 and
 showArithExpr (expr: ArithExpr): Doc =
 
     case expr of
-            Add e1 e2       -> (showArithExpr e1) <> (text " + ") <> (showArithExpr e2)
-        |   Sub e1 e2       -> (showArithExpr e1) <> (text " - ") <> (showArithExpr e2)
-        |   Mul e1 e2       -> (isAddSub e1)      <> (text " * ") <> (isAddSub e2)
-        |   Div e1 e2       -> (isAddSub e1)      <> (text " / ") <> (isAddSub e2)
+            Add e1 e2       -> (showArithExpr e1) <> (text " + ")
+                               <> (showArithExpr e2)
+        |   Sub e1 e2       -> (showArithExpr e1) <> (text " - ")
+                               <> (showArithExpr e2)
+        |   Mul e1 e2       -> (isAddSub e1)      <> (text " * ")
+                               <> (isAddSub e2)
+        |   Div e1 e2       -> (isAddSub e1)      <> (text " / ")
+                               <> (isAddSub e2)
         |   Integer x       -> text x.toString()
 ;
 \end{lstlisting}
@@ -1248,10 +1257,12 @@ Then the pretty printer of XML can be wrote:
 
 \begin{lstlisting}
 let quoted (s: String): String=
+
     "\"".concat(s.concat("\""))
 ;
 
 let rec showXML (xml: XMLNode): Doc=
+
     case xml of
         XMLText s        -> text s
     |   XMLCData s       -> text "<![CDATA[" <> text s <> text "]]>"
@@ -1261,13 +1272,17 @@ let rec showXML (xml: XMLNode): Doc=
     |   XMLElement s x y -> text "<" <> text s <> showATTs x <> text ">" <>
                              (nest 2 (line <> showXMLs y)) <>
                              line <> text "</" <> text s <> text ">"
+                             
 and
 showATTs (xmls: PList[XMLNode]): Doc=
+
     case xmls of
         Nil              -> NIL
     |   Cons x xs        -> showXML x <> showXMLs xs
+    
 and
 showXMLs (xmls: PList[XMLNode]): Doc=
+
     case xmls of
         Nil              -> NIL
     |   Cons x xs        ->
@@ -1332,6 +1347,7 @@ Then the pretty printer of Feather Weight Java can be wrote(only main printer is
 
 \begin{lstlisting}
 showFJClass (class : FJClass) : Doc =
+
     case class of
       FJClass t mt bodys  ->
       {
@@ -1347,8 +1363,10 @@ showFJClass (class : FJClass) : Doc =
                        nest 2 (line <> showFJClassBodyContents bodys) <>
                        line <> text "}")
       }
+      
 and
 showFJClasses (classes : PList[FJClass]) : Doc =
+
     case classes of
           Nil         -> NIL
 
@@ -1443,11 +1461,57 @@ Class A extends B
 
 
 \subsubsection{Implementation}
-The ADT of a F2J document is defined as Section \ref{section:f2j_parser}.
+The ADT of a F2J document is defined as Section \ref{section:f2j_parser}. The layout of its code structures is much more complex than an XML printer or a tree printer. For example, a \texttt{F2JExpr} of type \texttt{F2JCase}.
+\begin{lstlisting}
+data rec F2JCaseAlternative = F2JCaseAlternative String PList[String] F2JExpr
+and
+data F2JExpr = F2JCase F2JExpr PList[F2JCaseAlternative]
+          |    ......
+;
+\end{lstlisting}
+
+The layout of corresponding F2J code should be like:
+\begin{lstlisting}
+case x of
+  F2JNormalType s types         ->
+            (text s)
+| F2JFunctionType type1 type2   ->
+            (<> (showF2JType type1) (showF2JType type2))
+| F2JPairedType types           ->
+            (showF2JTypes types)
+\end{lstlisting}
+
+It involves a lot of calculation in indentations. For example, we need to know the longest length among all the \texttt{PList[F2JCaseAlternative]} to locate "->" properly. So before writing the printer for F2J, we need some functions for length calculation.
+\begin{lstlisting}
+let rec lengOfPListString (strs: PList[String]): Int=
+
+  case strs of
+      Cons x xs -> x.length() + 1 +
+                   (lengOfPListString (invoke[PList[String]] xs))
+  |   Nil       -> 0
+;
+
+let rec lengOfF2JCaseAlternative (ca: F2JCaseAlternative): Int=
+
+  case ca of
+      F2JCaseAlternative dataname params expr ->
+         (dataname.length()) + 1 + (lengOfPListString params)
+
+and
+lengOfF2JCaseAlternatives (cas: PList[F2JCaseAlternative]): Int=
+
+  case cas of
+      Nil         -> 0
+  |   Cons x xs
+      -> max (lengOfF2JCaseAlternative x)
+             (lengOfF2JCaseAlternatives (invoke[PList[F2JCaseAlternative]] xs))
+;
+\end{lstlisting}
 
 Then the main pretty printer of F2J can be wrote:
 \begin{lstlisting}
 showF2JExpr (expr: F2JExpr): Doc=
+
 case expr of
       F2JApplication f2jexpr apparm
   -> text "(" <> showF2JExpr f2jexpr <> text " " <>
@@ -1491,7 +1555,7 @@ case expr of
 
 \subsubsection{Test}
 
-For F2J, we use unit tests, since the language is much more complex than all the case studies we have done.
+For F2J, we use unit tests, since the language is much more complex than all the other case studies we have done.
 
 \begin{lstlisting}
 let tests=  (testF2JExprFull            +>[TestFn]
