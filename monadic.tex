@@ -10,7 +10,7 @@ Monadic parser combinators makes it easy to write complicated parsers by combini
 
 This library is built in F2J, which does not supports type classes just like Haskell. So in this library, We used the most basic functions \texttt{bind} and \texttt{result} just for \texttt{Parser[T]} to build monadic parsers. We also provides some useful basic parsers, such as \texttt{char} for parsing one single character, \texttt{string} for parsing a specific sequence of characters, \texttt{choice} and \texttt{many} for choice and repeatition.
 
-We used this parser combinators library for case studies, parsing simple arithmetic expression, XML, Feather Weight Java and a subset grammar of F2J itself. Currently F2J does not support modular compilation, to manage the large code base of the case studies, We wrote a simple script to perform \textit{C-like include} to simulate modular system. To test the parsers above, We wrote a simple test framework in F2J to manage and run test cases automatically.
+We used this parser combinators library for case studies, parsing simple arithmetic expression, XML, Feather Weight Java and a subset grammar of F2J itself.
 
 \section{Project Structure}
 
