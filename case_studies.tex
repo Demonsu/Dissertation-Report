@@ -1660,3 +1660,24 @@ let showF2JType (x: F2JType): Doc =
 end
 \end{lstlisting}
 
+\section{Integrate}
+
+\subsection{Simple Arithmetic Expression Printer}
+
+\subsubsection{Implementation}
+
+After both parser and printer being implemented separately but with the same ADT definition, we can integrate them with each other easily. First, we include both library and case studies.
+
+\begin{lstlisting}
+{-#
+    INCLUDE "simple_arith_expr_parser.sf"
+    INCLUDE "PrettyPrintingLib3.sf"
+    INCLUDE "ArithToDocument.sf"
+#-}
+\end{lstlisting}
+
+
+\subsubsection{Test}
+
+
+
