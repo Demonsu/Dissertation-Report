@@ -55,7 +55,15 @@ and expr: Parser[Char, Expr] =
                 (\(c: Char) -> \(a: Expr) -> \(b: Expr) -> Min a b)))) cs;
 \end{lstlisting}
 
-Now we can just use \texttt{expr} to parse the arithmetic expressions. However, this combinator only suites for expressions with '+', '-', '*', '/' operations. To generalize it, we can define a parser that can parse any expressions containing any predefined operations with different priorities. This task is relatively easy thanks to the combinators in the library. We firstly define an operation type \texttt{Op} which is a tuple that contains a symbol of operation and its behaviour. Then we define a combinator \texttt{gen} that accepts such operations and a parser, and applies the operation on the parsing result. By using \texttt{gen}, we can change our arithmetic expression parser into the below format with some helper combinators introduced.
+Now we can just use \texttt{expr} to parse the arithmetic expressions read by the function \texttt{readPolyList} defined in the source code file. In order to test it, we write a Python script which reads each line of the test cases provided and inserts them into the last line of copied parser source code. Then, it invokes all the parsers respectively via the command line to parse the test cases. The figure below demonstrates the testing result.
+\begin{figure}[tbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imgs/general_test}
+    \caption{Tests for Arithmetic Expressions}
+    \label{fig:general arithmetic}
+\end{figure}
+
+However, this combinator only suites for expressions with '+', '-', '*', '/' operations. To generalize it, we can define a parser that can parse any expressions containing any predefined operations with different priorities. This task is relatively easy thanks to the combinators in the library. We firstly define an operation type \texttt{Op} which is a tuple that contains a symbol of operation and its behaviour. Then we define a combinator \texttt{gen} that accepts such operations and a parser, and applies the operation on the parsing result. By using \texttt{gen}, we can change our arithmetic expression parser into the below format with some helper combinators introduced.
 
 \begin{lstlisting}
 type Op[A] = (Char, A -> A -> A);
