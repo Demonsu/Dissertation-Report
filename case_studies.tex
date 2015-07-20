@@ -1189,29 +1189,32 @@ It looks quite straight forward. However, it misses a piece of important informa
 \begin{lstlisting}
 let rec braketExpr (expr: ArithExpr): Doc =
 
-    (text "(") <> (showArithExpr expr) <> (text ")")
-    
+  (text "(") <> (showArithExpr expr) <> (text ")")
+
 and
 isAddSub (expr: ArithExpr): Doc =
 
-    case expr of
-            Add _ _     ->  braketExpr expr
-        |   Sub _ _     ->  braketExpr expr
-        |   _           ->  showArithExpr expr
-        
+  case expr of
+      Add _ _   ->  braketExpr expr
+    | Sub _ _   ->  braketExpr expr
+    | _         ->  showArithExpr expr
+
+and
+notInt (expr: ArithExpr): Doc =
+
+  case expr of
+      Integer i ->  text i.toString()
+    | _         ->  braketExpr expr
+
 and
 showArithExpr (expr: ArithExpr): Doc =
 
-    case expr of
-            Add e1 e2       -> (showArithExpr e1) <> (text " + ")
-                               <> (showArithExpr e2)
-        |   Sub e1 e2       -> (showArithExpr e1) <> (text " - ")
-                               <> (showArithExpr e2)
-        |   Mul e1 e2       -> (isAddSub e1)      <> (text " * ")
-                               <> (isAddSub e2)
-        |   Div e1 e2       -> (isAddSub e1)      <> (text " / ")
-                               <> (isAddSub e2)
-        |   Integer x       -> text x.toString()
+  case expr of
+      Add e1 e2   -> (showArithExpr e1) <> (text " + ") <> (showArithExpr e2)
+    | Sub e1 e2   -> (showArithExpr e1) <> (text " - ") <> (isAddSub e2)
+    | Mul e1 e2   -> (isAddSub e1)      <> (text " * ") <> (isAddSub e2)
+    | Div e1 e2   -> (isAddSub e1)      <> (text " / ") <> (notInt e2)
+    | Integer x   -> text x.toString()
 ;
 \end{lstlisting}
 
@@ -1662,11 +1665,11 @@ end
 
 \section{Integrate}
 
-\subsection{Simple Arithmetic Expression Printer}
+\subsection{Simple Arithmetic Expression Parser and Printer}
 
 \subsubsection{Implementation}
 
-After both parser and printer being implemented separately but with the same ADT definition, we can integrate them with each other easily. First, we include both library and case studies.
+After parser and pretty printer being implemented separately but with the same ADT definition, we can integrate them with each other easily. First, we include the code of both libraries and case studies.
 
 \begin{lstlisting}
 {-#
@@ -1676,8 +1679,73 @@ After both parser and printer being implemented separately but with the same ADT
 #-}
 \end{lstlisting}
 
+The output of our parser is \texttt{ParseOutput[ArithExpr]} which is a list of tuples while the input of our pretty printer is an ADT of \texttt{ArithExpr}. So a conversion function is needed.
+
+\begin{lstlisting}
+let getFirst (l : ParseOutput[ArithExpr]): ArithExpr  =
+
+    case l of
+        Nil             ->  Integer 0 --error
+     |  Cons x _        ->  x._1
+;
+\end{lstlisting}
 
 \subsubsection{Test}
+With the conversion function \texttt{getFirst}, we can just feed our pretty printer with the output from our parser.
+\begin{lstlisting}
+let result = arithExpr `parseString[ArithExpr]` "(1+2)*(3-(4*5+(6*7)))-3*4"
+;
+
+pretty 30 (showArithExpr (getFirst result))
+\end{lstlisting}
+
+Here we get the output:
+\begin{lstlisting}
+(1 + 2) * (3 - (4 * 5 + 6 * 7)) - 3 * 4
+\end{lstlisting}
+
+\subsection{A Subset of F2J Parser and Printer}
+
+\subsubsection{Implementation}
+Nothing is more interesting than a programming language compiling itself. Just as the above, first we include both the F2J parser and F2J pretty printer.
+\begin{lstlisting}
+{-#
+    INCLUDE "f2j_parser.sf"
+    INCLUDE "PrettyPrintingLib3.sf"
+    INCLUDE "F2JToDocument.sf"
+#-}
+\end{lstlisting}
+
+Also, add the corresponding \texttt{getFirst} function.
+\begin{lstlisting}
+let getFirst (l : ParseOutput[F2JExpr]): F2JExpr  =
+
+    case l of
+        Nil             ->  F2JStringLiteral "Empty result!"
+     |  Cons x _        ->  x._1
+;
+\end{lstlisting}
+
+\subsubsection{Test}
+Then we feed a long case into it.
+\begin{lstlisting}
+let result = f2jProgram `parseString[F2JExpr]` 
+    "data PList[A] = Nil | Cons A (PList[A]); 
+    let rec recursive[A] (a : A) : A = recursive[A] a; recursive[Int] 1";
+    
+pretty 30 (showF2JExpr (getFirst result))
+\end{lstlisting}
+
+Here we get the output:
+\begin{lstlisting}
+data PList[A]= 	Nil
+            |	Cons A PList[A]
+;
+let rec recursive[A] (a: A): A =
+    ((recursive [A]) a)
+;
+((recursive [Int]) 1)
+\end{lstlisting}
 
 
 
