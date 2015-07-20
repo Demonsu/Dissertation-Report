@@ -56,7 +56,7 @@ and expr: Parser[Char, Expr] =
 \end{lstlisting}
 
 Now we can just use \texttt{expr} to parse the arithmetic expressions read by the function \texttt{readPolyList} defined in the source code file. In order to test it, we write a Python script which reads each line of the test cases provided and inserts them into the last line of copied parser source code. Then, it invokes all the parsers respectively via the command line to parse the test cases. The figure below demonstrates the testing result.
-\begin{figure}[tbp]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\textwidth]{imgs/general_test}
     \caption{Tests for Arithmetic Expressions}
