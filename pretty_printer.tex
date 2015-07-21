@@ -240,7 +240,7 @@ let (<|>) (x: Doc) (y: Doc): Doc
 let flatten (d: Doc): Doc
 \end{lstlisting}
 
-The \texttt{<|>} operator represents a union of two layouts. The \texttt{flatten} operator replaces each line break in a layout by a single space. Then a document will always represent a set of layouts where all the layouts in the set flatten to the same one. With \texttt{<|>} and \texttt{flatten}, group can be defined as:
+The \texttt{<|>} operator represents a union of two layouts. The \texttt{flatten} operator deletes all the line breaks in a layout. Then the document now denotes a set of possible layouts, and all the layouts in it will be the same after \texttt{flatten}. With \texttt{<|>} and \texttt{flatten}, group can be defined as:
 \begin{lstlisting}
 let (<|>) (x: Doc) (y: Doc) : Doc =
     UNION x y
