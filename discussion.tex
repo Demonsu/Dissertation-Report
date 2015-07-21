@@ -5,7 +5,7 @@ F2J is a new born programming language. While we using it to build the parser an
 \begin{itemize}
 \item Module System
 
-Currently F2J only supports single file compilation, which means that I have to put all the codes in one file. It is hard to manage the project and reuse most of the codes. 
+Currently F2J only supports standalone compilation, which compiles one independent file at a time. This naive method makes it impossible to reuse written codes, leading to hardship in managing the project as a whole.
 
 \item Exceptions
 
@@ -51,6 +51,6 @@ class F22105 extends f2j.Closure
 Error: Could not find or load main class F2jparserandprinter$
 \end{lstlisting} 
 
-A Module System surely can solve this problem, and using some more expressive counting method also is a solution to extend the maximum length of code. However, we think the compiler itself should not generate so many nested inner classes. There must be something can be improved during the code translating period.
+To sovle this problem, a Module System can offer a perfect solution. Or with more concise counting methods, the maximum length of code can also be elongated considerably. Further, we do not regard it a good idea to rampantly generate inner classes during the compilation. We believe that a much more appropriate, efficient and elegant approach must be around the corner.
 
 \end{itemize}
