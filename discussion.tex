@@ -6,6 +6,7 @@ F2J is a new born programming language. While we using it to build the parser an
 \item Module System
 
 Currently F2J only supports single file compilation, which means that I have to put all the codes in one file. It is hard to manage the project and reuse most of the codes. 
+
 \item Exceptions
 
 F2J does not supports exceptions, so that I cannot use those Java functions that will throw exceptions, such as I/O libraries. Currently we could make use of the power of Java interpolation of F2J by writing a bridge class in Java to call those fuctions that may throw exceptions, but that just a temporary solution.
@@ -24,8 +25,6 @@ let singleton[A] (x : A) : PList[A] =
 \end{lstlisting}
 
 If F2J supports macros, the lambda function could be replaced by a more expressive macro.
-
-
 
 \item File Name too Long
 
@@ -52,6 +51,6 @@ class F22105 extends f2j.Closure
 Error: Could not find or load main class F2jparserandprinter$
 \end{lstlisting} 
 
-A Module System surely can solve this problem, and using some more expressive counting method also is a solution to extend the maximum length of code. However, we think the compiler itself should not generate so many nested inner classes. There must be something to improve during the code translating period.
+A Module System surely can solve this problem, and using some more expressive counting method also is a solution to extend the maximum length of code. However, we think the compiler itself should not generate so many nested inner classes. There must be something can be improved during the code translating period.
 
 \end{itemize}
