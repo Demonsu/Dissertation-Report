@@ -26,4 +26,33 @@ let singleton[A] (x : A) : PList[A] =
 
 If F2J supports macros, the lambda function could be replaced by a more expressive macro.
 
+
+
+\item File Name too Long
+
+When F2J's compiler translating programs to Java, a lot of nested inner classes will be generated. At some point, the level of nesting becomes so deep that we get:
+
+\begin{lstlisting}
+f2j -r f2jparserandprinter.sf
+
+f2jparserandprinter using [Naive]
+
+Compiling to Java source code ( ./F2jparserandprinter$.java )
+
+./F2jparserandprinter$.java:29140: error: error while writing F22105:
+
+./F2jparserandprinter$$1L43$1L306$1L387$1L660$1L731$1L834$1L897$1L969$1L1050
+$1L1197$1L3266$1L4567$1Datatype22175$1L5857$1L7241$1L9394$1L10526$1L18657$1
+L18933$1L19103$1L19299$1L19465$1L19771$1L19869$1L19974$1L21818$1F22084$1F22087
+$1F22090$1F22093$1F22096$1F22105.class
+(File name too long)
+
+class F22105 extends f2j.Closure
+^
+1 error
+Error: Could not find or load main class F2jparserandprinter$
+\end{lstlisting} 
+
+A Module System surely can solve this problem, and using some more expressive counting method also is a solution to extend the maximum length of code. However, we think the compiler itself should not generate so many nested inner classes. There must be something to improve during the code translating period.
+
 \end{itemize}
