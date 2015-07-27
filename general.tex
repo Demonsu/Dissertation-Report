@@ -2,7 +2,7 @@
 This chapter mainly focuses on the implementation details of a general parser combinator library. We will go through the whole process from the very beginning of the construction of a parser type to the whole working version.
 
 \section{Type of Parser}
-The goal of a parsing task is to analyse a piece of code constructed according to a certain kind of grammar and then transfer it into a parse tree. This parse tree then can be utilized by a compiler to generate machine code. Many approaches can be used to define a basic parser type. For general parsing purposes, we define the parser type in F2J as follow.
+The goal of parsing is to analyse a piece of code constructed according to a certain kind of grammar and then transfer it into a parse tree. This parse tree can then be utilized by a compiler to generate machine code. Many approaches can be used to define a basic parser type. For general parsing purposes, we define the parser type in F2J as follow.
 
 \begin{lstlisting}
 type Binding[Symbol, Result] = (PolyList[Symbol], Result);
@@ -62,7 +62,7 @@ let bind[S, A, B]
     (\(v: Binding[S, A]) -> f v._2 v._1) (p input));
 \end{lstlisting}
 
-Function map is used to apply a function onto each element of a PolyList. And function bind binds the result of the first parser onto the second parser and yields a new parser. With these two parsers, now we can define our sequential parser, denoted with \texttt{\textasciitilde}, as follows.
+Function \texttt{map} is used to apply a function onto each element of a PolyList. And function \texttt{bind} binds the result of the first parser onto the second parser and yields a new parser. With these two parsers, now we can define our sequential parser, denoted with \texttt{\textasciitilde}, as follows.
 
 \begin{lstlisting}
 let (~)[S, A, B] (p: Parser[S, A])
@@ -81,10 +81,10 @@ let (<|>)[S, A] (p1: Parser[S, A]) (p2: Parser[S, A]):
 	    (p1 input) ++[Binding[S, A]] (p2 input);
 \end{lstlisting}
 
-Although now we can build a parse tree of our own, but it is still impossible to combine parsers arbitrarily since these parsers yield different results. To solve this, we need some parser transformers that can alter the parser's result and transform it into our desired one.
+Although now we can build a parse tree of our own, it is still impossible to combine parsers arbitrarily since these parsers yield different results. To solve this, we need some parser transformers that can alter the parser's result and transform it into our desired one.
 
 \section{Parser Transformers}
-In this section, we will define some parser transformers that can transform existing parsers into our expecting ones. The first transformer is called '\texttt{sp}', which drops initial spaces from the input and returns rest string.
+In this section, we will define some parser transformers that can transform existing parsers into our expecting ones. The first transformer is called \texttt{sp}, which drops initial spaces from the input and returns rest string.
 
 \begin{lstlisting}
 let sp[R] (p: Parser[Char, R]): Parser[Char, R] = \(input: CharList) ->
@@ -140,7 +140,7 @@ let many1[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
 
 The difference between \texttt{many} and \texttt{many1} is that the latter one does not accept empty string.
 
-Another combinator, called \texttt{option}, is used to generate a result containing one or zero element, depending on whether it has successfully parsed a symbol or not. This combinator is defined as below.
+Another combinator, called \texttt{option}, is used to generate a result containing one or zero element, depending on whether it has successfully parsed a symbol or not. This combinator is defined as:
 
 \begin{lstlisting}
 let option[S, R] (p: Parser[S, R]): Parser[S, PolyList[R]] =
