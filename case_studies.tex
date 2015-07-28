@@ -768,7 +768,7 @@ data FJExpr = FJVariable FJIdentifier
             ;
 \end{lstlisting}
 
-\texttt{FJExpr} represents the \texttt{e} in grammar definition. \texttt{FJVariable} is just an identifier. \texttt{FJFieldAccess} is equavalent to \texttt{e.f} and \texttt{FJMethodInvoke} is \texttt{e.m(e)}. \texttt{FJAllocate} and \texttt{FJTypeCast} stand for \texttt{new C(e)} and \texttt{(C)e}.
+\texttt{FJExpr} represents the \texttt{e} in grammar definition. \texttt{FJVariable} is just an identifier. \texttt{FJFieldAccess} is equivalent to \texttt{e.f} and \texttt{FJMethodInvoke} is \texttt{e.m(e)}. \texttt{FJAllocate} and \texttt{FJTypeCast} stand for \texttt{new C(e)} and \texttt{(C)e}.
 
 After that, we have the statement definition
 
@@ -1013,7 +1013,7 @@ The \texttt{F2JCaseAlternative} has three parameters, the first one is the type 
 
 The \texttt{F2JRecordItem} represents one record construction, such as \texttt{a: 1}.
 
-The \texttt{F2JExpr} is too obvious, so we think we don't need to give any explaination here.
+The \texttt{F2JExpr} is too obvious, so we think we don't need to give any explanation here.
 
 \subsubsection{Unit Tests}
 

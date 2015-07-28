@@ -31,7 +31,7 @@ Note that we are considering the problem of displaying internal structures into 
 
 
 \section{Project Structure}
-The project is hosted on Github (\url{https://github.com/Demonsu/PrettyPrinter}) and mirrored in (\url{https://github.com/hkuplg/PrettyPrinter}). Open source under BSD license.
+The project is hosted on GitHub (\url{https://github.com/Demonsu/PrettyPrinter}) and mirrored in (\url{https://github.com/hkuplg/PrettyPrinter}). Open source under BSD license.
 
 The implementation of my library is located under \texttt{PrettyPrintingLib} folder. And all the case studies are located under \texttt{CaseStudies} folder. For each folder in \texttt{CaseStudies}, a \texttt{Makefile} is provided for building and running the test, just \texttt{make test} under each folder.
 
@@ -39,9 +39,9 @@ The implementation of my library is located under \texttt{PrettyPrintingLib} fol
 
 \section{A Bridge between Data Structure and Layout}
 
-In Oppen's pretty-printer\cite{oppen1980prettyprinting}, the small language he defined serves as the bridge between application specific data structures and pretty layouts. User describes their internal data structures by using the small language. Then the interpreter of Oppen's pretty-printer takes these descriptions as input to calculate the final pretty layout. It looks like that users need to add tags to their data so that the interpreter can recognize it.
+In Oppen's pretty-printer \cite{oppen1980prettyprinting}, the small language he defined serves as the bridge between application specific data structures and pretty layouts. User describes their internal data structures by using the small language. Then the interpreter of Oppen's pretty-printer takes these descriptions as input to calculate the final pretty layout. It looks like that users need to add tags to their data so that the interpreter can recognize it.
 
-When things come to functional programming, algebra has natural advantage to serve as the bridge. As mentioned in Hughes's pretty-printing library\cite{hughes1995design}, his library works with 'pretty documents', of type \textit{Doc}. Take a naive \textit{Doc} for example:
+When things come to functional programming, algebra has natural advantage to serve as the bridge. As mentioned in Hughes's pretty-printing library \cite{hughes1995design}, his library works with 'pretty documents', of type \textit{Doc}. Take a naive \textit{Doc} for example:
 
 \begin{lstlisting}
 Data Doc = NIL
@@ -173,7 +173,7 @@ let rec showDoc(doc: Doc): String =
 
 In primitive pretty printer, a document was regarded as equivalent to a string. Now, it should be viewed as a set of strings, each corresponding to a different layout of the same document. And what the library need to do is to select a best one from the set.
 
-First, what kind of layout will be the best one? In common, if a maximum line width is given, a prettiest layout always means one fits result onto one line where possible, but introduces sufficient line breaks to keep the total width less than the maximum line width\cite{wadler2003prettier}.
+First, what kind of layout will be the best one? In common, if a maximum line width is given, a prettiest layout always means one fits result onto one line where possible, but introduces sufficient line breaks to keep the total width less than the maximum line width \cite{wadler2003prettier}.
 
 Take a tree data as an example:
 \begin{lstlisting}
@@ -259,7 +259,7 @@ let rec group (d: Doc): Doc =
 ;
 \end{lstlisting}
 
-Then a set of laws can be generated to let these two operators interact with pre-existed operators.
+Then a set of laws can be generated to let these two operators interact with pre-existing operators.
 \begin{lstlisting}
 (x <|> y) <> z          = (x <> z) <|> (y <> z)
 x <> (y <|> z)          = (x <> y) <|> (x <> z)
@@ -272,7 +272,7 @@ flatten line            = text " "
 flatten (nest i x)      = flatten x
 \end{lstlisting}
 
-Next, how to choose the best layout among the set? Following the method in Hughes' paper\cite{hughes1995design} which specifies an ordering relation between lines, it can be done by specifying an ordering relation between documents. Given two lines a,b (a<b) and the available width w.
+Next, how to choose the best layout among the set? Following the method in Hughes' paper \cite{hughes1995design} which specifies an ordering relation between lines, it can be done by specifying an ordering relation between documents. Given two lines a,b (a<b) and the available width w.
 \begin{lstlisting}
 if (b<w)            then b
 if (a<w) & (b>w)    then a
@@ -335,12 +335,12 @@ TEXT s0 TEXT s1 nest i (text s2)
 TEXT s0 TEXT s1 TEXT s2
 \end{lstlisting}
 
-So it will take \textit{O($n^2$)} for a nested one. It's quite inefficient for processing a document.
+So it will take \textit{O($n^2$)} for a nesting one. It's quite inefficient for processing a document.
 \begin{lstlisting}
 nest i0 ((text s0) <> nest i1 ((text s1) <> nest i2 (text s2)))
 \end{lstlisting}
 
-Seond, when processing a concatenation of documents, it might pile up to the left:
+Second, when processing a concatenation of documents, it might pile up to the left:
 \begin{lstlisting}
 let rec (<>) (x: Doc) (y: Doc): Doc =
     case x of
@@ -362,7 +362,7 @@ TEXT s0 (TEXT s1 (TEXT s2 (text s3)))
 TEXT s0 TEXT s1 TEXT s2 TEXT s3 NIL
 \end{lstlisting}
 
-A solution for the first problem is to add an explicit data construct in \texttt{Doc}, and maintain an indentation when nestings are processed. Then the operator \texttt{nest} will be linear. And the solution for the second problem is very obvious, we can add another explicit data construct for concatenation and modify all
+A solution for the first problem is to add an explicit data construct in \texttt{Doc}, and maintain an indentation when nest operations are processed. Then the operator \texttt{nest} will be linear. And the solution for the second problem is very obvious, we can add another explicit data construct for concatenation and modify all
 the operators to act on a list of documents. Now, the \texttt{Doc} is as follows:
 \begin{lstlisting}
 data Doc =  NIL
@@ -440,14 +440,14 @@ pretty 30 (looptext 200)
 The test code will generate as many nested texts as you want. However, as F2J is a language for academic use, the max count we can hit is 500. Otherwise, either the compiler or the runtime will crash. We use Linux command "\texttt{time}" for evaluating. Raw data is collected in Figure \ref{fig:efficiency comparation}.
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.7\textwidth]{imgs/raw_data}
+    \includegraphics[width = 0.7\textwidth]{imgs/raw_data}
     \caption{Raw Data}
     \label{fig:efficiency comparation}
 \end{figure}
 And we draw the raw data into a line chart(Figure \ref{fig:efficiency line chart}). The x-axis shows how many nested concatenations there are, count in hundreds. And the y-axis shows how much time it takes, count in seconds. As expected, the lower one represents the library with efficiency improvement.
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.7\textwidth]{imgs/compare}
+    \includegraphics[width = 0.7\textwidth]{imgs/compare}
     \caption{Line Chart}
     \label{fig:efficiency line chart}
 \end{figure}
