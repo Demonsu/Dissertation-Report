@@ -335,7 +335,7 @@ TEXT s0 TEXT s1 nest i (text s2)
 TEXT s0 TEXT s1 TEXT s2
 \end{lstlisting}
 
-So it will take \textit{O($n^2$)} for a nesting one. It's quite inefficient for processing a document.
+So it will take \textit{O($n^2$)} for a nested one. It's quite inefficient for processing a document.
 \begin{lstlisting}
 nest i0 ((text s0) <> nest i1 ((text s1) <> nest i2 (text s2)))
 \end{lstlisting}
