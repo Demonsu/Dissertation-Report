@@ -357,7 +357,7 @@ let ident : Parser[PString] =
     result[PString] (x +>[Char] xs)));
 \end{lstlisting}
 
-We only have parsers that will produce one single character or a sequence of characters, we can use \texttt{many1} to form parsers that can parse natural numbers, hexdecimal numbers and signed integers.
+We only have parsers that will produce one single character or a sequence of characters, we can use \texttt{many1} to form parsers that can parse natural numbers, hex numbers and signed integers.
 
 \begin{lstlisting}
 let natural : Parser[Int] =

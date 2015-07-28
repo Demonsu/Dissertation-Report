@@ -9,7 +9,7 @@ Currently F2J only supports standalone compilation, which compiles one independe
 
 \item Exceptions
 
-F2J does not supports exceptions, so that I cannot use those Java functions that will throw exceptions, such as I/O libraries. Currently we could make use of the power of Java interpolation of F2J by writing a bridge class in Java to call those fuctions that may throw exceptions, but that just a temporary solution.
+F2J does not supports exceptions, so that I cannot use those Java functions that will throw exceptions, such as I/O libraries. Currently we could make use of the power of Java interpolation of F2J by writing a bridge class in Java to call those functions that may throw exceptions, but that just a temporary solution.
 
 \item Type Inferences
 
@@ -49,7 +49,7 @@ class F22105 extends f2j.Closure
 ^
 1 error
 Error: Could not find or load main class F2jparserandprinter$
-\end{lstlisting} 
+\end{lstlisting}
 
 To sovle this problem, a Module System can offer a perfect solution. Or with more concise counting methods, the maximum length of code can also be elongated considerably. Further, we do not regard it a good idea to rampantly generate inner classes during the compilation. We believe that a much more appropriate, efficient and elegant approach must be around the corner.
 

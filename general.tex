@@ -2,7 +2,7 @@
 This chapter mainly focuses on the implementation details of a general parser combinator library. We will go through the whole process from the very beginning of the construction of a parser type to the whole working version.
 
 \section{Type of Parser}
-The goal of parsing is to analyse a piece of code constructed according to a certain kind of grammar and then transfer it into a parse tree. This parse tree can then be utilized by a compiler to generate machine code. Many approaches can be used to define a basic parser type. For general parsing purposes, we define the parser type in F2J as follow.
+The goal of parsing is to analyze a piece of code constructed according to a certain kind of grammar and then transfer it into a parse tree. This parse tree can then be utilized by a compiler to generate machine code. Many approaches can be used to define a basic parser type. For general parsing purposes, we define the parser type in F2J as follow.
 
 \begin{lstlisting}
 type Binding[Symbol, Result] = (PolyList[Symbol], Result);

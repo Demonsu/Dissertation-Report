@@ -63,7 +63,7 @@ Now we can just use \texttt{expr} to parse the arithmetic expressions read by th
     \label{fig:general arithmetic}
 \end{figure}
 
-However, this combinator only suites for expressions with '+', '-', '*', '/' operations. To generalize it, we can define a parser that can parse any expressions containing any predefined operations with different priorities. This task is relatively easy thanks to the combinators in the library. We firstly define an operation type \texttt{Op} which is a tuple that contains a symbol of operation and its behaviour. Then we define a combinator \texttt{gen} that accepts such operations and a parser, and applies the operation on the parsing result. By using \texttt{gen}, we can change our arithmetic expression parser into the below format with some helper combinators introduced.
+However, this combinator only suites for expressions with '+', '-', '*', '/' operations. To generalize it, we can define a parser that can parse any expressions containing any predefined operations with different priorities. This task is relatively easy thanks to the combinators in the library. We firstly define an operation type \texttt{Op} which is a tuple that contains a symbol of operation and its behavior. Then we define a combinator \texttt{gen} that accepts such operations and a parser, and applies the operation on the parsing result. By using \texttt{gen}, we can change our arithmetic expression parser into the below format with some helper combinators introduced.
 
 \begin{lstlisting}
 type Op[A] = (Char, A -> A -> A);
@@ -238,7 +238,7 @@ and chr (cs : CharList) (d : Derivs) : Result[Char] =
     |   Nil -> NoParse[Char];
 \end{lstlisting}
 
-Although we obtain better efficiency, packrat parsing also has its disadvantages, like additional storage requirements and specific requirements for different languages. The former one can be solved with meticulously designed grammar tree structures and caching mechnisms while the latter one can be handled with a monadic parser. In the next section, we will introduce more case studies for our monadic parser combinators provided in the library.
+Although we obtain better efficiency, packrat parsing also has its disadvantages, like additional storage requirements and specific requirements for different languages. The former one can be solved with meticulously designed grammar tree structures and caching mechanisms while the latter one can be handled with a monadic parser. In the next section, we will introduce more case studies for our monadic parser combinators provided in the library.
 
 \section{Monadic Parser}
 
@@ -323,7 +323,7 @@ The \texttt{arithExprInteger} parser will first check whether the input has pref
 
 The \texttt{arithExprSpace} parser will eat spaces.
 
-Finally, we will define our arithmetrc expression parser just like the definition above
+Finally, we will define our arithmetic expression parser just like the definition above
 
 \begin{lstlisting}
 let arithExprBracketSurrounded[E] (p : Parser[E]) : Parser[E] =
@@ -559,7 +559,7 @@ let xmlText : Parser[XMLNode] =
         (\(content : PString) -> XMLText (pStringToString content));
 \end{lstlisting}
 
-The \texttt{xmlEscpaedChar} will try to parse those defined escaped characers and then transforms them back to the real character. \texttt{xmlEscapedCodePoint} does the similar work, it parses an unicode codepoint and transform it back to the string.
+The \texttt{xmlEscpaedChar} will try to parse those defined escaped characters and then transforms them back to the real character. \texttt{xmlEscapedCodePoint} does the similar work, it parses an unicode codepoint and transform it back to the string.
 
 Next, we define a parser to parse \texttt{CDATA}:
 
@@ -607,7 +607,7 @@ let xmlAttrs : Parser[PList[XMLNode]] =
     sepby[XMLNode, Unit] xmlAttr xmlSpace;
 \end{lstlisting}
 
-The parser \texttt{xmlSpace} will parse whitespaces including comments. \texttt{xmlDoubleQuotedString} and \texttt{xmlSingleQuotedString} parsers will parse double quoted strings and single quoted strings. \texttt{xmlQuotedString} combines them together for parsing attribute values. \texttt{xmlKey} parse attribute keys, which are sequence of letters or character \texttt{'-'}. \texttt{xmlAttrs} parses a sequence of key-value pairs, which are separated by \texttt{xmlSpace}.
+The parser \texttt{xmlSpace} will parse whitespace including comments. \texttt{xmlDoubleQuotedString} and \texttt{xmlSingleQuotedString} parsers will parse double quoted strings and single quoted strings. \texttt{xmlQuotedString} combines them together for parsing attribute values. \texttt{xmlKey} parse attribute keys, which are sequence of letters or character \texttt{'-'}. \texttt{xmlAttrs} parses a sequence of key-value pairs, which are separated by \texttt{xmlSpace}.
 
 Similar to attributes, process instruction parser \texttt{xmlProcInst} parser is defined as following
 
@@ -626,7 +626,7 @@ let xmlProcInst : Parser[XMLNode] =
                                                  conts)));
 \end{lstlisting}
 
-Looks pretty complicated. Let's interpret it step by step. First, it tries to parse a string \texttt{"\textless?"}, if succeeds, then it uses \texttt{xmlKey} to parse the tag name, such as the \texttt{xml} in \texttt{"\textless?xml"}. After that, use \texttt{xmlAttrs} to parse those key-value pairs. At last, parse the string \texttt{"?\textgreater"}. Those \texttt{xmlSpace} are for parsing whitespaces and comments, which could be completely ignored.
+Looks pretty complicated. Let's interpret it step by step. First, it tries to parse a string \texttt{"\textless?"}, if succeeds, then it uses \texttt{xmlKey} to parse the tag name, such as the \texttt{xml} in \texttt{"\textless?xml"}. After that, use \texttt{xmlAttrs} to parse those key-value pairs. At last, parse the string \texttt{"?\textgreater"}. Those \texttt{xmlSpace} are for parsing whitespace and comments, which could be completely ignored.
 
 Here comes to our main part, the XML element parser
 
@@ -873,7 +873,7 @@ Put the test string in \texttt{"..."} and run the program, we will see the outpu
   ], "" @ ""<default>" (1:131)"), ...]
 \end{lstlisting}
 
-The rest of results are omitted beause we only need to focus on the first result. We could easily see that the result is exactly the same as the input program.
+The rest of results are omitted because we only need to focus on the first result. We could easily see that the result is exactly the same as the input program.
 
 \subsection{A Subset of F2J Parser} \label{section:f2j_parser}
 
@@ -1101,7 +1101,7 @@ As discussed in Section \ref{section:printer}. Our library provides several basi
 \item \texttt{<>}:      for document concatenation
 \end{itemize}
 
-We use \texttt{"[]"} to show the hieratical structure between tree nodes, and assuming that nodes on the same level could be printed into one line when the line width is long enough.
+We use \texttt{"[]"} to show the hierarchical structure between tree nodes, and assuming that nodes on the same level could be printed into one line when the line width is long enough.
 \begin{lstlisting}
 let bracket (l: String) (d: Doc) (r: String): Doc =
     group (text l <> (nest 2 (line <> d)) <> line <> text r)
@@ -1115,14 +1115,14 @@ let rec showTree (tree: BTree): Doc=
 
     case tree of
             Node x xs   -> (text x) <> (showBracket xs)
-            
+
 and
 showBracket (tree: PList[BTree]): Doc=
 
     case tree of
             Nil         -> nil
         |   Cons x xs   -> bracket "[" (showTrees (x +>[BTree] xs)) "]"
-        
+
 and
 showTrees (tree: PList[BTree]): Doc=
 
@@ -1192,7 +1192,7 @@ data ArithExpr = Add ArithExpr ArithExpr
 ;
 \end{lstlisting}
 
-It looks quite straight forward. However, it misses a piece of important information in the definition, the parentheses. So the printer needs to add them automatically by analysing the context. At first glance, this is an interesting problem and there is no good solution without fully "if" "else". Since you already know something about both F2J and our library. We leave the solution in the following source code for you to further understand our library.
+It looks quite straight forward. However, it misses a piece of important information in the definition, the parentheses. So the printer needs to add them automatically by analyzing the context. At first glance, this is an interesting problem and there is no good solution without fully "if" "else". Since you already know something about both F2J and our library. We leave the solution in the following source code for you to further understand our library.
 
 \begin{lstlisting}
 let rec braketExpr (expr: ArithExpr): Doc =
@@ -1283,14 +1283,14 @@ let rec showXML (xml: XMLNode): Doc=
     |   XMLElement s x y -> text "<" <> text s <> showATTs x <> text ">" <>
                              (nest 2 (line <> showXMLs y)) <>
                              line <> text "</" <> text s <> text ">"
-                             
+
 and
 showATTs (xmls: PList[XMLNode]): Doc=
 
     case xmls of
         Nil              -> NIL
     |   Cons x xs        -> showXML x <> showXMLs xs
-    
+
 and
 showXMLs (xmls: PList[XMLNode]): Doc=
 
@@ -1374,7 +1374,7 @@ showFJClass (class : FJClass) : Doc =
                        nest 2 (line <> showFJClassBodyContents bodys) <>
                        line <> text "}")
       }
-      
+
 and
 showFJClasses (classes : PList[FJClass]) : Doc =
 
@@ -1737,10 +1737,10 @@ let getFirst (l : ParseOutput[F2JExpr]): F2JExpr  =
 \subsubsection{Test}
 Then we feed a long case into it.
 \begin{lstlisting}
-let result = f2jProgram `parseString[F2JExpr]` 
-    "data PList[A] = Nil | Cons A (PList[A]); 
+let result = f2jProgram `parseString[F2JExpr]`
+    "data PList[A] = Nil | Cons A (PList[A]);
     let rec recursive[A] (a : A) : A = recursive[A] a; recursive[Int] 1";
-    
+
 pretty 30 (showF2JExpr (getFirst result))
 \end{lstlisting}
 

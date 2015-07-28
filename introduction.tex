@@ -1,8 +1,8 @@
 \chapter{Introduction}
 
-Parser combinators are a set of higher-order functions that accept several parsers as input and then return a parser as output. Under this context, a parser is a function accepting strings as input and returning some data structures as output, typically a parse tree or a set of indices representing locations in the string where parsing stopped successfully. Parser combinators, also called combinatory parsing, adopts a recursive descendent parsing strategy that facilitates modular piecewise construction and testing.
+Parser combinators are a set of higher-order functions that accept several parsers as input and then return a parser as output. Under this context, a parser is a function accepting strings as input and returning some data structures as output, typically a parse tree or a set of indices representing locations in the string where parsing stopped successfully. Parser combinators, also called combinatory parsing, adopts a recursive descendant parsing strategy that facilitates modular piecewise construction and testing.
 
-Parser and Pretty Printer combinators are an alternative of tools used in compiler generators, such as lex, yacc or antlr. Combinators have a dominant advantage of being a reusable library instead of a fixed parser generator tool.
+Parser and Pretty Printer combinators are an alternative of tools used in compiler generators, such as \textit{lex}, \textit{yacc} or \textit{antlr}. Combinators have a dominant advantage of being a reusable library instead of a fixed parser generator tool.
 
 There are already some existing parser combinator libraries in the real world, such as Parsec \cite{Leijen:2002} in Haskell, the standard parser combinators library in Scala and Planck \cite{Planck} in OCaml. Most of them may have completely different structures and designs, but they share some common ideas, such as monadic parser combinators in both Parsec and Planck. These libraries is benefit from several extraordinary language features like lazy evaluation and tail-call elimination, so that they may have considerable performance advantages comparing with traditional parsing techniques.
 
