@@ -171,7 +171,7 @@ let rec showDoc(doc: Doc): String =
 
 \section{A Pretty Printer with Alternative Layouts} \label{section:printer}
 
-In primitive pretty printer, a document was regarded as equivalent to a string. Now, it should be viewed as a set of strings, each corresponding to a different layout of the same document. And what the library need to do is to select a best one from the set.
+In primitive pretty printer, a document was regarded as equivalent to a string. Now, it should be viewed as a set of strings, each corresponding to a different layout of the same document \cite{wadler2003prettier}. And what the library need to do is to select a best one from the set.
 
 First, what kind of layout will be the best one? In common, if a maximum line width is given, a prettiest layout always means one fits result onto one line where possible, but introduces sufficient line breaks to keep the total width less than the maximum line width \cite{wadler2003prettier}.
 
